@@ -1,4 +1,15 @@
-import { empty, equals, filter, head, juxt, log, map, pipe, prop } from "gamla";
+import {
+  contains,
+  empty,
+  filter,
+  head,
+  juxt,
+  log,
+  lowercase,
+  map,
+  pipe,
+  prop,
+} from "gamla";
 
 import OpenSubtitles from "opensubtitles-api";
 import TorrentSearchApi from "torrent-search-api";
@@ -16,9 +27,18 @@ const searchMagnet = async (movieName) => {
 
 const parseSrt = (str) => new srtParser2.default().fromSrt(str);
 
+const cleanText = pipe(
+  lowercase,
+  replace(",", ""),
+  replace("!", ""),
+  replace("?", ""),
+  replace(".", ""),
+  replace("'", "")
+);
+
 const findTimeForPhrase = (text) =>
   pipe(
-    filter(pipe(prop("text"), equals(text))),
+    filter(pipe(prop("text"), cleanText, contains(cleanText(text)))),
     head,
     juxt(prop("startTime"), prop("endTime"))
   );
@@ -35,7 +55,7 @@ const getSrtsForHashAndName = (query) => (movieHash) =>
     .then(
       pipe(
         (x) => x["en"] || [],
-        map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt))
+        map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt, log))
       )
     );
 
@@ -110,4 +130,4 @@ const main = async (phrase, movieName) => {
   console.log("all done!");
 };
 
-main("Cobb?", "inception");
+main("we wont last two days", "inception");

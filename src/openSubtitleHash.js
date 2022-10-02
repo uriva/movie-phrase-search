@@ -74,6 +74,5 @@ export const computeHash = (fileTorrent) =>
       fileTorrent.length - chunkSize,
       fileTorrent.length - 1,
     ]),
-    binl2hex,
-    logWith("computed hash:")
+    binl2hex
   )(fileTorrent.length);
