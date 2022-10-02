@@ -9,6 +9,7 @@ import {
   map,
   pipe,
   prop,
+  replace,
 } from "gamla";
 
 import OpenSubtitles from "opensubtitles-api";
@@ -130,4 +131,4 @@ const main = async (phrase, movieName) => {
   console.log("all done!");
 };
 
-main("we wont last two days", "inception");
+main("i want you to give me your voice", "the little mermaid");
