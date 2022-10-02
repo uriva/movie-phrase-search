@@ -1,15 +1,16 @@
 import {
   contains,
-  empty,
   filter,
-  head,
   juxt,
   log,
   lowercase,
   map,
+  mapCat,
   pipe,
   prop,
   replace,
+  sideEffect,
+  take,
 } from "gamla";
 
 import OpenSubtitles from "opensubtitles-api";
@@ -20,29 +21,22 @@ import fetch from "node-fetch";
 import ffmpeg from "fluent-ffmpeg";
 import { default as srtParser2 } from "srt-parser-2";
 
-const searchMagnet = async (movieName) => {
+const searchMagnets = (maxResults, medium) => async (movieName) => {
   TorrentSearchApi.enablePublicProviders();
-  const results = await TorrentSearchApi.search(movieName, "Movies", 5);
-  return TorrentSearchApi.getMagnet(results[0]);
+  return map(async (x) => {
+    return await TorrentSearchApi.getMagnet(x);
+  })(await TorrentSearchApi.search(movieName, medium, maxResults));
 };
 
 const parseSrt = (str) => new srtParser2.default().fromSrt(str);
 
 const cleanText = pipe(
   lowercase,
-  replace(",", ""),
-  replace("!", ""),
-  replace("?", ""),
-  replace(".", ""),
-  replace("'", "")
+  ...map((c) => replace(c, ""))(",!?.\"'-♪".split(""))
 );
 
-const findTimeForPhrase = (text) =>
-  pipe(
-    filter(pipe(prop("text"), cleanText, contains(cleanText(text)))),
-    head,
-    juxt(prop("startTime"), prop("endTime"))
-  );
+const findPhrase = (text) =>
+  filter(pipe(prop("text"), cleanText, contains(cleanText(text))));
 
 const getSrtsForHashAndName = (query) => (movieHash) =>
   new OpenSubtitles({
@@ -51,12 +45,12 @@ const getSrtsForHashAndName = (query) => (movieHash) =>
     .search({
       query,
       movieHash,
-      limit: 1,
+      limit: 10,
     })
     .then(
       pipe(
         (x) => x["en"] || [],
-        map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt, log))
+        map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt))
       )
     );
 
@@ -91,7 +85,7 @@ const downloadChunk = async (url, start, duration, output) => {
     .duration(duration)
     .output(output)
     .on("end", () => {
-      console.log("Finished processing");
+      console.log(`written file ${output}`);
     })
     .run();
 };
@@ -103,32 +97,50 @@ const srtTimestampToSeconds = (srtTimestamp) => {
   return milliseconds * 0.001 + seconds + 60 * minutes + 3600 * hours;
 };
 
-const main = async (phrase, movieName) => {
-  const [servingUrl, timeRangesFound] = await pipe(
-    searchMagnet,
-    juxt(
-      makeServer,
-      pipe(
-        magnetToFiles,
-        selectRightFile,
-        computeHash,
-        getSrtsForHashAndName(movieName),
-        map(findTimeForPhrase(phrase))
-      )
+const perMagnet = (name, phrase, maxSrts, maxFileMatches) => async (magnet) => {
+  const [servingUrl, timeRangesFound] = await juxt(
+    makeServer,
+    pipe(
+      magnetToFiles,
+      selectRightFile,
+      computeHash,
+      getSrtsForHashAndName(name),
+      sideEffect((x) => console.log(`found ${x.length} srt files`)),
+      take(maxSrts),
+      mapCat(findPhrase(phrase)),
+      log,
+      sideEffect((x) => console.log(`found ${x.length} occurrences`))
     )
-  )(movieName);
-  if (empty(timeRangesFound)) {
-    console.error("no srts found");
-    return;
-  }
-  let [start, end] = head(timeRangesFound);
-  await downloadChunk(
-    servingUrl,
-    srtTimestampToSeconds(start),
-    srtTimestampToSeconds(end) - srtTimestampToSeconds(start),
-    "./output.mp4"
-  );
-  console.log("all done!");
+  )(magnet);
+  return map(({ startTime, endTime }) =>
+    downloadChunk(
+      servingUrl,
+      srtTimestampToSeconds(startTime),
+      srtTimestampToSeconds(endTime) - srtTimestampToSeconds(startTime),
+      `./${name}-${phrase}-${startTime}-${endTime}.mp4`
+    )
+  )(timeRangesFound.slice(0, maxFileMatches));
 };
 
-main("i want you to give me your voice", "the little mermaid");
+const main = async ({
+  phrase,
+  medium,
+  name,
+  maxFiles,
+  maxMatchesPerSrt,
+  maxSrtsPerFile,
+}) =>
+  pipe(
+    searchMagnets(maxFiles, medium),
+    sideEffect((x) => console.log(`found ${x.length} magnet links`)),
+    map(perMagnet(name, phrase, maxSrtsPerFile, maxMatchesPerSrt))
+  )(name);
+
+main({
+  phrase: "mr cobb",
+  medium: "Movies",
+  name: "inception",
+  maxFiles: 1,
+  maxSrtsPerFile: 1,
+  maxMatchesPerSrt: 50,
+});
