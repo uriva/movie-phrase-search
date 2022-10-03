@@ -1,4 +1,5 @@
 import {
+  always,
   contains,
   empty,
   explode,
@@ -53,26 +54,6 @@ const cleanText = pipe(
 
 const findPhrase = (text) =>
   filter(pipe(prop("text"), cleanText, contains(cleanText(text))));
-
-const getSrtsForHashAndName =
-  ({ query, imdbid, limit }) =>
-  (movieHash) =>
-    new OpenSubtitles({
-      useragent: "UserAgent",
-    })
-      .search({
-        imdbid,
-        query,
-        movieHash,
-        limit,
-      })
-      .then(
-        pipe(
-          (x) => x["en"] || [],
-          map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt)),
-          filter((x) => x)
-        )
-      );
 
 const videoFilePredicate = ({ name }) =>
   name.endsWith("mp4") || name.endsWith("mkv");
@@ -132,11 +113,35 @@ const findPhraseInSrt = ({
     take(maxMatchesPerSrt)
   );
 
-const findSrtForVideoFile = ({ query, imdbid, maxSrtsPerFile }) =>
+const findSrtForVideoFile = (params) =>
   pipe(
     sideEffect(() => console.log(`computing hash...`)),
     computeHash,
-    getSrtsForHashAndName({ limit: maxSrtsPerFile, query, imdbid }),
+    (movieHash) =>
+      fetch(
+        "https://api.opensubtitles.org/api/v1/subtitles?" +
+          new URLSearchParams({
+            ...params,
+            movieHash,
+          }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Api-Key": "MijIRcpzHyNls6f54dQyNlqNkKcr9I4J",
+          },
+        }
+      ),
+    (x) => x.json(),
+    log,
+    (x) => x["en"] || [],
+    map(
+      pipe(
+        ({ url }) => fetch(url),
+        (r) => r.text(),
+        parseSrt
+      )
+    ),
+    filter((x) => x),
     sideEffect((x) => console.log(`found ${x.length} srt files`)),
     head
   );
@@ -204,14 +209,14 @@ const main = async ({ name, magnet, matcher, srt, webTorrentClient }) =>
   const webTorrentClient = new WebTorrent();
   await main({
     webTorrentClient,
-    name: "the terminator 1984",
+    name: "the game 1997",
     magnet: { maxResults: 1, medium: "Movies" },
     srt: {
       // imdbid: "tt7768848",
-      maxSrtsPerFile: 1,
+      limit: 1,
     },
     matcher: {
-      phrase: "i'll be back",
+      phrase: "the",
       maxMatchesPerSrt: 10,
       bufferLeft: 0,
       bufferRight: 0,
