@@ -35,7 +35,14 @@ const searchMagnets = ({ maxResults, medium }) =>
     unique(pipe(parseMagnet, prop("infoHash")))
   );
 
-const parseSrt = (str) => new srtParser2.default().fromSrt(str);
+const parseSrt = (str) => {
+  const result = new srtParser2.default().fromSrt(str);
+  if (result.find((entry) => entry.text.length > 500)) {
+    console.error("ignoring malformatted srt file");
+    return null;
+  }
+  return result;
+};
 
 const cleanText = pipe(
   lowercase,
@@ -60,7 +67,8 @@ const getSrtsForHashAndName =
       .then(
         pipe(
           (x) => x["en"] || [],
-          map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt))
+          map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt)),
+          filter((x) => x)
         )
       );
 
@@ -179,19 +187,18 @@ const main = async ({ name, magnet, matcher, webTorrentClient }) =>
   const webTorrentClient = new WebTorrent();
   await main({
     webTorrentClient,
-    name: "judge dredd 1995",
-    magnet: { maxResults: 5, medium: "Movies" },
+    name: "terminator judgement day",
+    magnet: { maxResults: 1, medium: "Movies" },
     matcher: {
-      phrase: "i knew you'd say that",
+      phrase: "i'll be back",
       medium: "Movies",
       // imdbid: "tt7768848",
       maxSrtsPerFile: 1,
       maxMatchesPerSrt: 10,
-      bufferLeft: -53,
-      bufferRight: 55,
+      bufferLeft: 0,
+      bufferRight: 0,
     },
   });
   console.log("finished");
   webTorrentClient.destroy();
-  process.exit();
 })();
