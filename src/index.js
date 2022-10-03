@@ -2,6 +2,7 @@ import {
   contains,
   explode,
   filter,
+  head,
   juxt,
   log,
   lowercase,
@@ -13,6 +14,7 @@ import {
   sideEffect,
   spread,
   take,
+  unique,
 } from "gamla";
 
 import OpenSubtitles from "opensubtitles-api";
@@ -65,37 +67,31 @@ const getSrtsForHashAndName =
 const filePredicate = ({ name }) =>
   name.endsWith("mp4") || name.endsWith("mkv");
 
-const magnetToFiles = (magnet) =>
-  new Promise((resolve) => {
-    new WebTorrent().add(magnet, ({ files }) => {
-      resolve(files);
-    });
-  });
-
 const randomPort = () => Math.floor(1000 + Math.random() * 9000);
 
-const makeServer = (magnet) =>
+const makeServer = (torrent) =>
   new Promise((resolve) => {
-    const client = new WebTorrent();
-    client.add(magnet, async (torrent) => {
-      const port = randomPort();
-      torrent.createServer().listen(port);
-      resolve(
-        `http://localhost:${port}/${torrent.files.findIndex(filePredicate)}`
-      );
+    const port = randomPort();
+    const server = torrent.createServer();
+    server.listen(port);
+    resolve({
+      url: `http://localhost:${port}/${torrent.files.findIndex(filePredicate)}`,
+      server,
     });
   });
 
-const downloadChunk = async (url, { start, duration, id }) => {
-  ffmpeg(url)
-    .seekInput(start)
-    .duration(duration)
-    .output(`${id}.mp4`)
-    .on("end", () => {
-      console.log(`written file ${id}`);
-    })
-    .run();
-};
+const downloadChunk = ({ url }, { start, duration, id }) =>
+  new Promise((resolve) => {
+    ffmpeg(url)
+      .seekInput(start)
+      .duration(duration)
+      .output(`${id}.mp4`)
+      .on("end", () => {
+        console.log(`written file ${id}`);
+        resolve();
+      })
+      .run();
+  });
 
 const srtTimestampToSeconds = (srtTimestamp) => {
   const [rest, millisecondsString] = srtTimestamp.split(",");
@@ -106,7 +102,7 @@ const srtTimestampToSeconds = (srtTimestamp) => {
 
 const findTimeRanges =
   ({
-    name,
+    query,
     imdbid,
     phrase,
     maxSrtsPerFile,
@@ -114,23 +110,21 @@ const findTimeRanges =
     bufferLeft,
     bufferRight,
   }) =>
-  (magnet) =>
+  (torrent) =>
     pipe(
       sideEffect(() => console.log(`fetching metadata...`)),
-      magnetToFiles,
+      prop("files"),
       (files) => files.find(filePredicate),
       sideEffect(() => console.log(`computing hash...`)),
       computeHash,
-      getSrtsForHashAndName({ query: name, imdbid }),
+      getSrtsForHashAndName({ query, imdbid }),
       sideEffect((x) => console.log(`found ${x.length} srt files`)),
       take(maxSrtsPerFile),
       mapCat(findPhrase(phrase)),
       log,
       sideEffect((x) => console.log(`found ${x.length} occurrences`)),
       map(({ startTime, endTime }) => ({
-        id: `./${
-          parseMagnet(magnet).name
-        }-${name}-${phrase}-${startTime}-${endTime}`,
+        id: `./${torrent.name}-${phrase}-${startTime}-${endTime}`,
         start: srtTimestampToSeconds(startTime) - bufferLeft,
         duration:
           srtTimestampToSeconds(endTime) +
@@ -138,31 +132,56 @@ const findTimeRanges =
           (srtTimestampToSeconds(startTime) - bufferLeft),
       })),
       take(maxMatchesPerSrt)
-    )(magnet);
+    )(torrent);
 
-const main = async ({ name, magnet, matcher }) =>
-  pipe(
-    searchMagnets(magnet),
-    sideEffect((x) => console.log(`found ${x.length} magnet links`)),
-    map(
-      pipe(
-        juxt(makeServer, findTimeRanges({ ...matcher, name })),
-        explode(1),
-        map(spread(downloadChunk))
-      )
-    )
-  )(name);
+const awaitSideEffect = (f) => async (x) => {
+  await f(x);
+  return x;
+};
 
-main({
-  name: "inception",
-  magnet: { maxResults: 1, medium: "Movies" },
-  matcher: {
-    phrase: "mr cobb",
-    medium: "Movies",
-    // imdbid: "tt7768848",
-    maxSrtsPerFile: 1,
-    maxMatchesPerSrt: 10,
-    bufferLeft: 0,
-    bufferRight: 0,
-  },
-});
+const magnetToTorrent = (webTorrentClient) => (magnet) =>
+  new Promise((resolve) => {
+    webTorrentClient.add(magnet, async (torrent) => {
+      resolve(torrent);
+    });
+  });
+
+const main =
+  (getTorrent) =>
+  async ({ name, magnet, matcher }) =>
+    pipe(
+      searchMagnets(magnet),
+      sideEffect((x) => console.log(`found ${x.length} magnet links`)),
+      mapCat(
+        pipe(
+          getTorrent,
+          juxt(makeServer, findTimeRanges({ ...matcher, query: name })),
+          explode(1)
+        )
+      ),
+      awaitSideEffect(map(spread(downloadChunk))),
+      map(pipe(head, prop("server"))),
+      unique((x) => x),
+      sideEffect(() => console.log(`killing servers`)),
+      map((server) => server.close())
+    )(name);
+
+(async () => {
+  const wtClient = new WebTorrent();
+  await main(magnetToTorrent(wtClient))({
+    name: "inception",
+    magnet: { maxResults: 1, medium: "Movies" },
+    matcher: {
+      phrase: "mr cobb",
+      medium: "Movies",
+      // imdbid: "tt7768848",
+      maxSrtsPerFile: 1,
+      maxMatchesPerSrt: 10,
+      bufferLeft: 0,
+      bufferRight: 0,
+    },
+  });
+  console.log("finished");
+  wtClient.destroy();
+  process.exit();
+})();
