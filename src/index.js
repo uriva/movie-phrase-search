@@ -157,15 +157,9 @@ const magnetToTorrent = (webTorrentClient) => (magnet) =>
 
 const findMatchesInTorrent = (params) =>
   pipe(
-    juxt(
-      makeServer,
-      pipe(
-        juxt(prop("name"), pipe(prop("files"), filter(filePredicate))),
-        explode(1),
-        mapCat(findTimeRanges(params))
-      )
-    ),
-    explode(1)
+    juxt(prop("name"), pipe(prop("files"), filter(filePredicate))),
+    explode(1),
+    mapCat(findTimeRanges(params))
   );
 
 const main = async ({ name, magnet, matcher, webTorrentClient }) =>
@@ -175,7 +169,8 @@ const main = async ({ name, magnet, matcher, webTorrentClient }) =>
     map(
       pipe(
         magnetToTorrent(webTorrentClient),
-        findMatchesInTorrent({ ...matcher, query: name }),
+        juxt(makeServer, findMatchesInTorrent({ ...matcher, query: name })),
+        explode(1),
         awaitSideEffect(map(spread(downloadChunk))),
         unique(pipe(head, prop("url"))),
         map(([{ server }]) => server.close())
