@@ -21,7 +21,6 @@ import {
   unique,
 } from "gamla";
 
-import OpenSubtitles from "opensubtitles-api";
 import TorrentSearchApi from "torrent-search-api";
 import WebTorrent from "webtorrent";
 import { computeHash } from "./openSubtitleHash.js";

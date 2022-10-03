@@ -13,7 +13,6 @@
     "fluent-ffmpeg": "^2.1.2",
     "gamla": "git+https://github.com/uriva/gamlajs.git",
     "node-fetch": "^3.2.10",
-    "opensubtitles-api": "^5.1.2",
     "os-torrent-hash": "0.0.9",
     "parse-magnet-uri": "^4.0.0",
     "srt-parser-2": "^1.1.7",
