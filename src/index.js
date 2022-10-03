@@ -116,6 +116,7 @@ const perMagnet =
     const [servingUrl, timeRangesFound] = await juxt(
       makeServer(index),
       pipe(
+        sideEffect(() => console.log(`fetching metadata...`)),
         magnetToFiles,
         selectRightFile,
         sideEffect(() => console.log(`computing hash...`)),
