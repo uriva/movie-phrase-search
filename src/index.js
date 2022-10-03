@@ -1,5 +1,6 @@
 import {
   contains,
+  empty,
   explode,
   filter,
   head,
@@ -9,6 +10,7 @@ import {
   lowercase,
   map,
   mapCat,
+  max,
   pipe,
   prop,
   replace,
@@ -75,6 +77,8 @@ const getSrtsForHashAndName =
 const videoFilePredicate = ({ name }) =>
   name.endsWith("mp4") || name.endsWith("mkv");
 
+const srtFilePredicate = ({ name }) => name.endsWith("srt");
+
 const randomPort = () => Math.floor(1000 + Math.random() * 9000);
 
 const makeServer = (torrent) =>
@@ -83,7 +87,7 @@ const makeServer = (torrent) =>
     const server = torrent.createServer();
     server.listen(port);
     resolve({
-      url: `http://localhost:${port}/${torrent.files.findIndex(filePredicate)}`,
+      url: `http://localhost:${port}/${resolveVideoFileIndex(torrent)}`,
       server,
     });
   });
@@ -108,35 +112,34 @@ const srtTimestampToSeconds = (srtTimestamp) => {
   return milliseconds * 0.001 + seconds + 60 * minutes + 3600 * hours;
 };
 
-const findTimeRanges =
-  ({
-    query,
-    imdbid,
-    phrase,
-    maxSrtsPerFile,
-    maxMatchesPerSrt,
-    bufferLeft,
-    bufferRight,
-  }) =>
-  ([torrentName, videoFile]) =>
-    pipe(
-      sideEffect(() => console.log(`computing hash...`)),
-      computeHash,
-      getSrtsForHashAndName({ limit: maxSrtsPerFile, query, imdbid }),
-      sideEffect((x) => console.log(`found ${x.length} srt files`)),
-      take(maxSrtsPerFile),
-      mapCat(findPhrase(phrase)),
-      sideEffect((x) => console.log(`found ${x.length} occurrences`)),
-      map(({ startTime, endTime }) => ({
-        id: `./${torrentName}-${phrase}-${startTime}-${endTime}`,
-        start: srtTimestampToSeconds(startTime) - bufferLeft,
-        duration:
-          srtTimestampToSeconds(endTime) +
-          bufferRight -
-          (srtTimestampToSeconds(startTime) - bufferLeft),
-      })),
-      take(maxMatchesPerSrt)
-    )(videoFile);
+const findPhraseInSrt = ({
+  phrase,
+  maxMatchesPerSrt,
+  bufferLeft,
+  bufferRight,
+}) =>
+  pipe(
+    findPhrase(phrase),
+    sideEffect((x) => console.log(`found ${x.length} occurrences`)),
+    map(({ startTime, endTime }) => ({
+      id: `./${phrase}-${startTime}-${endTime}`,
+      start: srtTimestampToSeconds(startTime) - bufferLeft,
+      duration:
+        srtTimestampToSeconds(endTime) +
+        bufferRight -
+        (srtTimestampToSeconds(startTime) - bufferLeft),
+    })),
+    take(maxMatchesPerSrt)
+  );
+
+const findSrtForVideoFile = ({ query, imdbid, maxSrtsPerFile }) =>
+  pipe(
+    sideEffect(() => console.log(`computing hash...`)),
+    computeHash,
+    getSrtsForHashAndName({ limit: maxSrtsPerFile, query, imdbid }),
+    sideEffect((x) => console.log(`found ${x.length} srt files`)),
+    head
+  );
 
 const awaitSideEffect = (f) => async (x) => {
   await f(x);
@@ -155,21 +158,40 @@ const magnetToTorrent = (webTorrentClient) => (magnet) =>
     );
   });
 
-const findMatchesInTorrent = (params) =>
-  pipe(
-    juxt(prop("name"), pipe(prop("files"), filter(videoFilePredicate))),
-    explode(1),
-    mapCat(findTimeRanges(params))
-  );
+const downloadToStr = (file) =>
+  new Promise((resolve) => {
+    file.getBuffer((_, buffer) => resolve(buffer.toString()));
+  });
 
-const main = async ({ name, magnet, matcher, webTorrentClient }) =>
+const resolveVideoFileIndex = (torrent) => {
+  const videoFiles = torrent.files.filter(videoFilePredicate);
+  if (empty(videoFiles)) {
+    console.error("did not find video files in torrent");
+    throw "fatal error";
+  }
+  return torrent.files.indexOf(max(prop("length"))(videoFiles));
+};
+
+const torrentToSrt = (params) => async (torrent) => {
+  const srtWithin = torrent.files.find(srtFilePredicate);
+  return srtWithin
+    ? parseSrt(await downloadToStr(srtWithin))
+    : findSrtForVideoFile(params)(
+        torrent.files[resolveVideoFileIndex(torrent)]
+      );
+};
+
+const main = async ({ name, magnet, matcher, srt, webTorrentClient }) =>
   pipe(
     searchMagnets(magnet),
     sideEffect((x) => console.log(`found ${x.length} magnet links`)),
     map(
       pipe(
         magnetToTorrent(webTorrentClient),
-        juxt(makeServer, findMatchesInTorrent({ ...matcher, query: name })),
+        juxt(
+          makeServer,
+          pipe(torrentToSrt({ query: name, ...srt }), findPhraseInSrt(matcher))
+        ),
         explode(1),
         awaitSideEffect(map(spread(downloadChunk))),
         unique(pipe(head, prop("url"))),
@@ -182,13 +204,14 @@ const main = async ({ name, magnet, matcher, webTorrentClient }) =>
   const webTorrentClient = new WebTorrent();
   await main({
     webTorrentClient,
-    name: "the game 1997",
+    name: "the terminator 1984",
     magnet: { maxResults: 1, medium: "Movies" },
-    matcher: {
-      phrase: "the object of the game",
-      medium: "Movies",
+    srt: {
       // imdbid: "tt7768848",
       maxSrtsPerFile: 1,
+    },
+    matcher: {
+      phrase: "i'll be back",
       maxMatchesPerSrt: 10,
       bufferLeft: 0,
       bufferRight: 0,
