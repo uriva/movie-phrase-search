@@ -1,5 +1,6 @@
 import {
   contains,
+  enumerate,
   filter,
   juxt,
   log,
@@ -38,21 +39,24 @@ const cleanText = pipe(
 const findPhrase = (text) =>
   filter(pipe(prop("text"), cleanText, contains(cleanText(text))));
 
-const getSrtsForHashAndName = (query) => (movieHash) =>
-  new OpenSubtitles({
-    useragent: "UserAgent",
-  })
-    .search({
-      query,
-      movieHash,
-      limit: 10,
+const getSrtsForHashAndName =
+  ({ query, imdbid }) =>
+  (movieHash) =>
+    new OpenSubtitles({
+      useragent: "UserAgent",
     })
-    .then(
-      pipe(
-        (x) => x["en"] || [],
-        map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt))
-      )
-    );
+      .search({
+        imdbid,
+        query,
+        movieHash,
+        limit: 10,
+      })
+      .then(
+        pipe(
+          (x) => x["en"] || [],
+          map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt))
+        )
+      );
 
 const selectRightFileIndex = (x) =>
   x.findIndex(({ name }) => name.endsWith("mp4") || name.endsWith("mkv"));
@@ -66,10 +70,11 @@ const magnetToFiles = (magnet) =>
     });
   });
 
-const makeServer = (magnetURI) =>
+const makeServer = (index) => (magnetURI) =>
   new Promise((resolve) => {
     const client = new WebTorrent();
-    const port = 3333;
+    const portDigit = index + 1;
+    const port = `${portDigit}${portDigit}${portDigit}${portDigit}`;
     client.add(magnetURI, (torrent) => {
       const server = torrent.createServer();
       server.listen(port);
@@ -98,17 +103,26 @@ const srtTimestampToSeconds = (srtTimestamp) => {
 };
 
 const perMagnet =
-  (name, phrase, maxSrts, maxFileMatches, bufferLeft, bufferRight) =>
-  async (magnet) => {
+  ({
+    name,
+    imdbid,
+    phrase,
+    maxSrtsPerFile,
+    maxMatchesPerSrt,
+    bufferLeft,
+    bufferRight,
+  }) =>
+  async ([index, magnet]) => {
     const [servingUrl, timeRangesFound] = await juxt(
-      makeServer,
+      makeServer(index),
       pipe(
         magnetToFiles,
         selectRightFile,
+        sideEffect(() => console.log(`computing hash...`)),
         computeHash,
-        getSrtsForHashAndName(name),
+        getSrtsForHashAndName({ query: name, imdbid }),
         sideEffect((x) => console.log(`found ${x.length} srt files`)),
-        take(maxSrts),
+        take(maxSrtsPerFile),
         mapCat(findPhrase(phrase)),
         log,
         sideEffect((x) => console.log(`found ${x.length} occurrences`))
@@ -121,14 +135,15 @@ const perMagnet =
         srtTimestampToSeconds(endTime) +
           bufferRight -
           (srtTimestampToSeconds(startTime) - bufferLeft),
-        `./${name}-${phrase}-${startTime}-${endTime}.mp4`
+        `./${index}-${name}-${phrase}-${startTime}-${endTime}.mp4`
       )
-    )(timeRangesFound.slice(0, maxFileMatches));
+    )(timeRangesFound.slice(0, maxMatchesPerSrt));
   };
 
 const main = async ({
   phrase,
   medium,
+  imdbid,
   name,
   maxFiles,
   maxMatchesPerSrt,
@@ -139,25 +154,29 @@ const main = async ({
   pipe(
     searchMagnets(maxFiles, medium),
     sideEffect((x) => console.log(`found ${x.length} magnet links`)),
+    enumerate,
     map(
-      perMagnet(
+      perMagnet({
         name,
+        imdbid,
         phrase,
         maxSrtsPerFile,
         maxMatchesPerSrt,
         bufferLeft,
-        bufferRight
-      )
+        bufferRight,
+      })
     )
   )(name);
 
 main({
-  phrase: "lucky",
+  phrase: "batman",
   medium: "Movies",
-  name: "Match Point",
+  // medium: "Series",
+  name: "batman begins",
+  // imdbid: "tt7768848",
   maxFiles: 1,
   maxSrtsPerFile: 1,
   maxMatchesPerSrt: 50,
-  bufferLeft: 3,
+  bufferLeft: 0,
   bufferRight: 0,
 });
