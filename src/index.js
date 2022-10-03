@@ -170,7 +170,7 @@ const main = async ({ name, magnet, matcher, webTorrentClient }) =>
         findMatchesInTorrent({ ...matcher, query: name }),
         awaitSideEffect(map(spread(downloadChunk))),
         unique(pipe(head, prop("url"))),
-        map(([_, { server }]) => server.close())
+        map(([{ server }]) => server.close())
       )
     )
   )(name);
@@ -180,15 +180,15 @@ const main = async ({ name, magnet, matcher, webTorrentClient }) =>
   await main({
     webTorrentClient,
     name: "judge dredd 1995",
-    magnet: { maxResults: 10, medium: "Movies" },
+    magnet: { maxResults: 5, medium: "Movies" },
     matcher: {
-      phrase: "knew you",
+      phrase: "i knew you'd say that",
       medium: "Movies",
       // imdbid: "tt7768848",
       maxSrtsPerFile: 1,
       maxMatchesPerSrt: 10,
-      bufferLeft: 0,
-      bufferRight: 4,
+      bufferLeft: -53,
+      bufferRight: 55,
     },
   });
   console.log("finished");
