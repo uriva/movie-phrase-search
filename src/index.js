@@ -28,6 +28,7 @@ import { computeHash } from "./openSubtitleHash.js";
 import fetch from "node-fetch";
 import ffmpeg from "fluent-ffmpeg";
 import { parseMagnet } from "parse-magnet-uri";
+import { readFileSync } from "fs";
 import { default as srtParser2 } from "srt-parser-2";
 
 TorrentSearchApi.enablePublicProviders();
@@ -165,7 +166,10 @@ const magnetToTorrent = (webTorrentClient) => (magnet) =>
 
 const downloadToStr = (file) =>
   new Promise((resolve) => {
-    file.getBuffer((_, buffer) => resolve(buffer.toString()));
+    file.getBuffer((err, buffer) => {
+      if (err) throw err;
+      resolve(buffer.toString());
+    });
   });
 
 const resolveVideoFileIndex = (torrent) => {
@@ -178,12 +182,17 @@ const resolveVideoFileIndex = (torrent) => {
 };
 
 const torrentToSrt = (params) => async (torrent) => {
-  const srtWithin = torrent.files.find(srtFilePredicate);
-  return srtWithin
-    ? parseSrt(await downloadToStr(srtWithin))
-    : findSrtForVideoFile(params)(
-        torrent.files[resolveVideoFileIndex(torrent)]
-      );
+  const srtWithinFile = torrent.files.find(srtFilePredicate);
+  const srtWithin =
+    srtWithinFile && parseSrt(await downloadToStr(srtWithinFile));
+  return (
+    srtWithin ||
+    (params.path
+      ? parseSrt(readFileSync(params.path).toString())
+      : findSrtForVideoFile(params)(
+          torrent.files[resolveVideoFileIndex(torrent)]
+        ))
+  );
 };
 
 const main = async ({ name, magnet, matcher, srt, webTorrentClient }) =>
@@ -209,19 +218,21 @@ const main = async ({ name, magnet, matcher, srt, webTorrentClient }) =>
   const webTorrentClient = new WebTorrent();
   await main({
     webTorrentClient,
-    name: "the game 1997",
+    name: "pretty woman",
     magnet: { maxResults: 1, medium: "Movies" },
     srt: {
+      path: "/home/uri/Downloads/pretty-woman-1990-english-yify-129600/Pretty.Woman.1990.1080p.720p.BluRay.x264.[YTS.MX]-English.srt",
       // imdbid: "tt7768848",
       limit: 1,
     },
     matcher: {
-      phrase: "the",
-      maxMatchesPerSrt: 10,
+      phrase: "young lady",
+      maxMatchesPerSrt: 20,
       bufferLeft: 0,
       bufferRight: 0,
     },
   });
   console.log("finished");
   webTorrentClient.destroy();
+  process.exit();
 })();
