@@ -23,7 +23,6 @@ import WebTorrent from "webtorrent";
 import { computeHash } from "./openSubtitleHash.js";
 import fetch from "node-fetch";
 import ffmpeg from "fluent-ffmpeg";
-import { parseMagnet } from "parse-magnet-uri";
 import { default as srtParser2 } from "srt-parser-2";
 
 const searchMagnets =
