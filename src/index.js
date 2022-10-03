@@ -55,7 +55,7 @@ const getSrtsForHashAndName = (query) => (movieHash) =>
     );
 
 const selectRightFileIndex = (x) =>
-  x.findIndex(({ name }) => name.endsWith("mp4"));
+  x.findIndex(({ name }) => name.endsWith("mp4") || name.endsWith("mkv"));
 
 const selectRightFile = (files) => files[selectRightFileIndex(files)];
 
@@ -97,30 +97,34 @@ const srtTimestampToSeconds = (srtTimestamp) => {
   return milliseconds * 0.001 + seconds + 60 * minutes + 3600 * hours;
 };
 
-const perMagnet = (name, phrase, maxSrts, maxFileMatches) => async (magnet) => {
-  const [servingUrl, timeRangesFound] = await juxt(
-    makeServer,
-    pipe(
-      magnetToFiles,
-      selectRightFile,
-      computeHash,
-      getSrtsForHashAndName(name),
-      sideEffect((x) => console.log(`found ${x.length} srt files`)),
-      take(maxSrts),
-      mapCat(findPhrase(phrase)),
-      log,
-      sideEffect((x) => console.log(`found ${x.length} occurrences`))
-    )
-  )(magnet);
-  return map(({ startTime, endTime }) =>
-    downloadChunk(
-      servingUrl,
-      srtTimestampToSeconds(startTime),
-      srtTimestampToSeconds(endTime) - srtTimestampToSeconds(startTime),
-      `./${name}-${phrase}-${startTime}-${endTime}.mp4`
-    )
-  )(timeRangesFound.slice(0, maxFileMatches));
-};
+const perMagnet =
+  (name, phrase, maxSrts, maxFileMatches, bufferLeft, bufferRight) =>
+  async (magnet) => {
+    const [servingUrl, timeRangesFound] = await juxt(
+      makeServer,
+      pipe(
+        magnetToFiles,
+        selectRightFile,
+        computeHash,
+        getSrtsForHashAndName(name),
+        sideEffect((x) => console.log(`found ${x.length} srt files`)),
+        take(maxSrts),
+        mapCat(findPhrase(phrase)),
+        log,
+        sideEffect((x) => console.log(`found ${x.length} occurrences`))
+      )
+    )(magnet);
+    return map(({ startTime, endTime }) =>
+      downloadChunk(
+        servingUrl,
+        srtTimestampToSeconds(startTime) - bufferLeft,
+        srtTimestampToSeconds(endTime) +
+          bufferRight -
+          (srtTimestampToSeconds(startTime) - bufferLeft),
+        `./${name}-${phrase}-${startTime}-${endTime}.mp4`
+      )
+    )(timeRangesFound.slice(0, maxFileMatches));
+  };
 
 const main = async ({
   phrase,
@@ -129,18 +133,31 @@ const main = async ({
   maxFiles,
   maxMatchesPerSrt,
   maxSrtsPerFile,
+  bufferLeft,
+  bufferRight,
 }) =>
   pipe(
     searchMagnets(maxFiles, medium),
     sideEffect((x) => console.log(`found ${x.length} magnet links`)),
-    map(perMagnet(name, phrase, maxSrtsPerFile, maxMatchesPerSrt))
+    map(
+      perMagnet(
+        name,
+        phrase,
+        maxSrtsPerFile,
+        maxMatchesPerSrt,
+        bufferLeft,
+        bufferRight
+      )
+    )
   )(name);
 
 main({
-  phrase: "mr cobb",
+  phrase: "lucky",
   medium: "Movies",
-  name: "inception",
+  name: "Match Point",
   maxFiles: 1,
   maxSrtsPerFile: 1,
   maxMatchesPerSrt: 50,
+  bufferLeft: 3,
+  bufferRight: 0,
 });
