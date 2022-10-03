@@ -37,7 +37,7 @@ const searchMagnets = ({ maxResults, medium }) =>
 
 const parseSrt = (str) => {
   const result = new srtParser2.default().fromSrt(str);
-  if (result.find((entry) => entry.text.length > 500)) {
+  if (!result.length || result.find((entry) => entry.text.length > 500)) {
     console.error("ignoring malformatted srt file");
     return null;
   }
@@ -53,7 +53,7 @@ const findPhrase = (text) =>
   filter(pipe(prop("text"), cleanText, contains(cleanText(text))));
 
 const getSrtsForHashAndName =
-  ({ query, imdbid }) =>
+  ({ query, imdbid, limit }) =>
   (movieHash) =>
     new OpenSubtitles({
       useragent: "UserAgent",
@@ -62,7 +62,7 @@ const getSrtsForHashAndName =
         imdbid,
         query,
         movieHash,
-        limit: 10,
+        limit,
       })
       .then(
         pipe(
@@ -72,7 +72,7 @@ const getSrtsForHashAndName =
         )
       );
 
-const filePredicate = ({ name }) =>
+const videoFilePredicate = ({ name }) =>
   name.endsWith("mp4") || name.endsWith("mkv");
 
 const randomPort = () => Math.floor(1000 + Math.random() * 9000);
@@ -118,11 +118,11 @@ const findTimeRanges =
     bufferLeft,
     bufferRight,
   }) =>
-  ([torrentName, file]) =>
+  ([torrentName, videoFile]) =>
     pipe(
       sideEffect(() => console.log(`computing hash...`)),
       computeHash,
-      getSrtsForHashAndName({ query, imdbid }),
+      getSrtsForHashAndName({ limit: maxSrtsPerFile, query, imdbid }),
       sideEffect((x) => console.log(`found ${x.length} srt files`)),
       take(maxSrtsPerFile),
       mapCat(findPhrase(phrase)),
@@ -136,7 +136,7 @@ const findTimeRanges =
           (srtTimestampToSeconds(startTime) - bufferLeft),
       })),
       take(maxMatchesPerSrt)
-    )(file);
+    )(videoFile);
 
 const awaitSideEffect = (f) => async (x) => {
   await f(x);
@@ -157,7 +157,7 @@ const magnetToTorrent = (webTorrentClient) => (magnet) =>
 
 const findMatchesInTorrent = (params) =>
   pipe(
-    juxt(prop("name"), pipe(prop("files"), filter(filePredicate))),
+    juxt(prop("name"), pipe(prop("files"), filter(videoFilePredicate))),
     explode(1),
     mapCat(findTimeRanges(params))
   );
@@ -182,10 +182,10 @@ const main = async ({ name, magnet, matcher, webTorrentClient }) =>
   const webTorrentClient = new WebTorrent();
   await main({
     webTorrentClient,
-    name: "terminator judgement day",
+    name: "the game 1997",
     magnet: { maxResults: 1, medium: "Movies" },
     matcher: {
-      phrase: "i'll be back",
+      phrase: "the object of the game",
       medium: "Movies",
       // imdbid: "tt7768848",
       maxSrtsPerFile: 1,
