@@ -8,7 +8,7 @@ import { map } from "gamla";
     main({
       searchParams: {
         name,
-        phrase: "my precious",
+        phrase: "lucky",
       },
       webTorrentClient,
       magnet: { maxResults: 1, medium: "Movies" },
@@ -22,11 +22,7 @@ import { map } from "gamla";
         bufferRight: 0,
       },
     })
-  )([
-    "the fellowship of the ring 1080p",
-    "the two towers 1080p",
-    "the return of the king 1080p",
-  ]);
+  )(["match point"]);
   console.log("finished");
   webTorrentClient.destroy();
   process.exit();

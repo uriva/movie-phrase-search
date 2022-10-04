@@ -10,6 +10,7 @@ import {
   log,
   lowercase,
   map,
+  mapCat,
   max,
   pipe,
   prop,
@@ -128,7 +129,7 @@ const srtTimestampToSeconds = (srtTimestamp) => {
   return milliseconds * 0.001 + seconds + 60 * minutes + 3600 * hours;
 };
 
-const findSrtForVideoFile = (params) =>
+const findSrtsForVideoFile = (params) =>
   pipe(
     sideEffect(() => console.log(`computing hash...`)),
     computeHash,
@@ -138,16 +139,17 @@ const findSrtForVideoFile = (params) =>
           new URLSearchParams({
             ...params,
             movieHash,
-          }),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Api-Key": "MijIRcpzHyNls6f54dQyNlqNkKcr9I4J",
-          },
-        }
+          })
       ),
-    (x) => x.json(),
-    log,
+    async (x) => {
+      const text = await x.text();
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        console.error("could not fetch from opensubtitles");
+        return {};
+      }
+    },
     (x) => x["en"] || [],
     map(
       pipe(
@@ -157,8 +159,7 @@ const findSrtForVideoFile = (params) =>
       )
     ),
     filter((x) => x),
-    sideEffect((x) => console.log(`found ${x.length} srt files`)),
-    head
+    sideEffect((x) => console.log(`found ${x.length} srt files`))
   );
 
 const awaitSideEffect = (f) => async (x) => {
@@ -202,13 +203,14 @@ const torrentFilesToSrt = (params) => async (torrentFiles) => {
   )(torrentFiles);
   const srtWithin =
     srtWithinFile && parseSrt(await downloadToStr(srtWithinFile));
-  return (
-    srtWithin ||
-    (params.path
-      ? parseSrt(readFileSync(params.path).toString())
-      : findSrtForVideoFile(params)(
-          torrentFiles[resolveVideoFileIndex(torrentFiles)]
-        ))
+  if (srtWithin) {
+    return [srtWithin];
+  }
+  if (params.path) {
+    return [parseSrt(readFileSync(params.path).toString())];
+  }
+  return findSrtsForVideoFile(params)(
+    torrentFiles[resolveVideoFileIndex(torrentFiles)]
   );
 };
 
@@ -230,7 +232,7 @@ export const main = async ({
           pipe(
             prop("files"),
             torrentFilesToSrt({ query: searchParams.name, ...srt }),
-            findPhraseInSrt(searchParams.phrase),
+            mapCat(findPhraseInSrt(searchParams.phrase)),
             sideEffect((x) => console.log(`found ${x.length} occurrences`))
           )
         ),
