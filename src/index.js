@@ -8,7 +8,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "frankly my dear",
+        phrase: "good morning princess",
       },
       webTorrentClient,
       magnet: { limit: 1, medium: "Movies" },
@@ -20,8 +20,7 @@ import { map } from "gamla";
         bufferRight: 0,
       },
     })
-  )(["gone with the wind"]);
-  console.log("finished");
+  )(["life is beautiful"]);
   webTorrentClient.destroy();
   process.exit();
 })();
