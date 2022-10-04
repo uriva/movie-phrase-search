@@ -115,8 +115,7 @@ const mergeFiles =
       }
       const merged = ffmpeg();
       matches
-        .map(second)
-        .map(matchToFilename({ name, phrase }))
+        .map(pipe(second, matchToFilename({ name, phrase })))
         .forEach((path) => merged.input(path));
       merged
         .on("end", () => {
