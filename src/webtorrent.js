@@ -1,6 +1,5 @@
 import {
   always,
-  complement,
   empty,
   filter,
   ifElse,
@@ -35,27 +34,12 @@ const downloadToStr = (file) =>
     });
   });
 
-const videoFilePredicate = ({ name }) =>
-  name.endsWith("mp4") || name.endsWith("mkv");
-
-const srtFilePredicate = ({ name }) => name.endsWith("srt");
-
-const findSrtInFiles = pipe(
-  filter(srtFilePredicate),
-  ifElse(empty, always(null), max(prop("length")))
-);
-
-const assert = (condition, text) =>
-  sideEffect((x) => {
-    if (!condition(x)) throw text;
-  });
-
-const resolveVideoFile = pipe(
-  prop("files"),
-  assert(complement(empty), "fatal error: no video files in torrent"),
-  filter(videoFilePredicate),
-  max(prop("length"))
-);
+const findSuffix = (suffix) =>
+  pipe(
+    prop("files"),
+    filter(({ name }) => name.endsWith(`.${suffix}`)),
+    ifElse(empty, always(null), max(prop("length")))
+  );
 
 const randomPort = () => Math.floor(1000 + Math.random() * 9000);
 
@@ -66,15 +50,14 @@ export const torrentToServer = (torrent) =>
     server.listen(port);
     resolve({
       url: `http://localhost:${port}/${torrent.files.indexOf(
-        resolveVideoFile(torrent)
+        findSuffix("mp4")(torrent)
       )}`,
       server,
     });
   });
 
 export const torrentToSrts = (params) => async (torrent) => {
-  const { files } = torrent;
-  const srtWithinFile = findSrtInFiles(files);
+  const srtWithinFile = findSuffix("srt")(torrent);
   const srtWithin =
     srtWithinFile && parseSrt(await downloadToStr(srtWithinFile));
   if (srtWithin) {
@@ -83,5 +66,7 @@ export const torrentToSrts = (params) => async (torrent) => {
   if (params.path) {
     return [parseSrt(readFileSync(params.path).toString())];
   }
-  return srtsForVideoFile(params)(resolveVideoFile(files));
+  const vid = findSuffix("mp4")(torrent);
+  if (!vid) return [];
+  return srtsForVideoFile(params)(vid);
 };
