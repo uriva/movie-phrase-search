@@ -8,7 +8,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "good morning princess",
+        phrase: "devil in our pocket",
       },
       webTorrentClient,
       magnet: { limit: 1, medium: "Movies" },
@@ -16,11 +16,11 @@ import { map } from "gamla";
         limit: 1,
       },
       downloadParams: {
-        bufferLeft: 0,
-        bufferRight: 0,
+        bufferLeft: 9,
+        bufferRight: 35,
       },
     })
-  )(["life is beautiful"]);
+  )(["jodorowsky's dune"]);
   webTorrentClient.destroy();
   process.exit();
 })();

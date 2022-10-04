@@ -1,8 +1,10 @@
 import { downloadMatchFromMp4Url, mergeMp4s } from "./ffmpeg.js";
 import {
   explode,
+  greater,
   head,
   juxt,
+  length,
   log,
   map,
   mapCat,
@@ -11,6 +13,7 @@ import {
   sideEffect,
   spread,
   unique,
+  when,
 } from "gamla";
 import {
   magnetToTorrent,
@@ -67,7 +70,7 @@ export const findAndDownload = async ({
             map(([{ server }]) => server.close())
           )
         ),
-        mergeMp4s(searchParams)
+        when(pipe(length, greater(1)), mergeMp4s(searchParams))
       )
     )
   )(searchParams.name);
