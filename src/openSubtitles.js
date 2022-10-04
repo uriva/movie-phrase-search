@@ -1,4 +1,7 @@
-import { logWith, pipe } from "gamla";
+import { filter, map, pipe, sideEffect } from "gamla";
+
+import fetch from "node-fetch";
+import { parseSrt } from "./srt.js";
 
 const initLongs = (fileLength) => {
   const longs = [];
@@ -66,7 +69,7 @@ const process =
     return longs;
   };
 
-export const computeHash = (fileTorrent) =>
+const computeHash = (fileTorrent) =>
   pipe(
     initLongs,
     process(fileTorrent, [0, chunkSize - 1]),
@@ -76,3 +79,36 @@ export const computeHash = (fileTorrent) =>
     ]),
     binl2hex
   )(fileTorrent.length);
+
+export const srtsForVideoFile = (params) =>
+  pipe(
+    sideEffect(() => console.log(`computing hash...`)),
+    computeHash,
+    (movieHash) =>
+      fetch(
+        "https://api.opensubtitles.org/api/v1/subtitles?" +
+          new URLSearchParams({
+            ...params,
+            movieHash,
+          })
+      ),
+    async (x) => {
+      const text = await x.text();
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        console.error("could not fetch from opensubtitles");
+        return {};
+      }
+    },
+    (x) => x["en"] || [],
+    map(
+      pipe(
+        ({ url }) => fetch(url),
+        (r) => r.text(),
+        parseSrt
+      )
+    ),
+    filter((x) => x),
+    sideEffect((x) => console.log(`found ${x.length} srt files`))
+  );

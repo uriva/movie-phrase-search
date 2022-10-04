@@ -1,14 +1,14 @@
 import WebTorrent from "webtorrent";
-import { main } from "./lib.js";
+import { findAndDownload } from "./phraseFinder.js";
 import { map } from "gamla";
 
 (async () => {
   const webTorrentClient = new WebTorrent();
   await map((name) =>
-    main({
+    findAndDownload({
       searchParams: {
         name,
-        phrase: "lucky",
+        phrase: "mr cobb",
       },
       webTorrentClient,
       magnet: { maxResults: 1, medium: "Movies" },
@@ -22,7 +22,7 @@ import { map } from "gamla";
         bufferRight: 0,
       },
     })
-  )(["match point"]);
+  )(["inception"]);
   console.log("finished");
   webTorrentClient.destroy();
   process.exit();
