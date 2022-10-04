@@ -6,6 +6,7 @@ import {
   filter,
   head,
   juxt,
+  length,
   log,
   logWith,
   lowercase,
@@ -15,6 +16,7 @@ import {
   pipe,
   prop,
   replace,
+  second,
   sideEffect,
   spread,
   take,
@@ -28,6 +30,7 @@ import fetch from "node-fetch";
 import ffmpeg from "fluent-ffmpeg";
 import { parseMagnet } from "parse-magnet-uri";
 import { readFileSync } from "fs";
+import { resolve } from "path";
 import { default as srtParser2 } from "srt-parser-2";
 
 TorrentSearchApi.enablePublicProviders();
@@ -52,7 +55,7 @@ const cleanText = pipe(
   ...map((c) => replace(c, ""))(",!?.\"'-♪".split(""))
 );
 
-const findPhrase = (text) =>
+const findPhraseInSrt = (text) =>
   filter(pipe(prop("text"), cleanText, contains(cleanText(text))));
 
 const videoFilePredicate = ({ name }) =>
@@ -73,18 +76,56 @@ const makeServer = (torrent) =>
     });
   });
 
-const downloadChunk = ({ url }, { start, duration, id }) =>
-  new Promise((resolve) => {
-    ffmpeg(url)
-      .seekInput(start)
-      .duration(duration)
-      .output(`${id}.mp4`)
-      .on("end", () => {
-        console.log(`written file ${id}`);
+const matchToFilename =
+  ({ name, phrase }) =>
+  ({ startTime, endTime }) =>
+    `${name}-${phrase}-${startTime}-${endTime}.mp4`;
+
+const downloadChunk =
+  ({ bufferLeft, bufferRight }) =>
+  (searchParams) =>
+  ({ url }, { startTime, endTime }) =>
+    new Promise((resolve) => {
+      ffmpeg(url)
+        .seekInput(srtTimestampToSeconds(startTime) - bufferLeft)
+        .duration(
+          srtTimestampToSeconds(endTime) -
+            srtTimestampToSeconds(startTime) +
+            bufferLeft +
+            bufferRight
+        )
+        .output(matchToFilename(searchParams)({ startTime, endTime }))
+        .on("end", () => {
+          console.log(`written match to file.`);
+          resolve();
+        })
+        .on("error", console.error)
+        .run();
+    });
+
+const tempDir = "/tmp/";
+
+const mergeFiles =
+  ({ name, phrase }) =>
+  (matches) =>
+    new Promise((resolve) => {
+      if (empty(matches)) {
         resolve();
-      })
-      .run();
-  });
+        return;
+      }
+      const merged = ffmpeg();
+      matches
+        .map(second)
+        .map(matchToFilename({ name, phrase }))
+        .forEach((path) => merged.input(path));
+      merged
+        .on("end", () => {
+          console.log("written combined to file");
+          resolve();
+        })
+        .on("error", console.error)
+        .mergeToFile(`${name}-${phrase}.mp4`, tempDir);
+    });
 
 const srtTimestampToSeconds = (srtTimestamp) => {
   const [rest, millisecondsString] = srtTimestamp.split(",");
@@ -92,26 +133,6 @@ const srtTimestampToSeconds = (srtTimestamp) => {
   const [hours, minutes, seconds] = map((x) => parseInt(x))(rest.split(":"));
   return milliseconds * 0.001 + seconds + 60 * minutes + 3600 * hours;
 };
-
-const findPhraseInSrt = ({
-  phrase,
-  maxMatchesPerSrt,
-  bufferLeft,
-  bufferRight,
-}) =>
-  pipe(
-    findPhrase(phrase),
-    sideEffect((x) => console.log(`found ${x.length} occurrences`)),
-    map(({ startTime, endTime }) => ({
-      id: `./${phrase}-${startTime}-${endTime}`,
-      start: srtTimestampToSeconds(startTime) - bufferLeft,
-      duration:
-        srtTimestampToSeconds(endTime) +
-        bufferRight -
-        (srtTimestampToSeconds(startTime) - bufferLeft),
-    })),
-    take(maxMatchesPerSrt)
-  );
 
 const findSrtForVideoFile = (params) =>
   pipe(
@@ -181,7 +202,9 @@ const resolveVideoFileIndex = (torrent) => {
 };
 
 const torrentToSrt = (params) => async (torrent) => {
-  const srtWithinFile = torrent.files.find(srtFilePredicate);
+  const srtWithinFile = max(prop("length"))(
+    torrent.files.filter(srtFilePredicate)
+  );
   const srtWithin =
     srtWithinFile && parseSrt(await downloadToStr(srtWithinFile));
   return (
@@ -194,7 +217,13 @@ const torrentToSrt = (params) => async (torrent) => {
   );
 };
 
-const main = async ({ name, magnet, matcher, srt, webTorrentClient }) =>
+const main = async ({
+  searchParams,
+  downloadParams,
+  magnet,
+  srt,
+  webTorrentClient,
+}) =>
   pipe(
     searchMagnets(magnet),
     sideEffect((x) => console.log(`found ${x.length} magnet links`)),
@@ -203,30 +232,42 @@ const main = async ({ name, magnet, matcher, srt, webTorrentClient }) =>
         magnetToTorrent(webTorrentClient),
         juxt(
           makeServer,
-          pipe(torrentToSrt({ query: name, ...srt }), findPhraseInSrt(matcher))
+          pipe(
+            torrentToSrt({ query: searchParams.name, ...srt }),
+            findPhraseInSrt(searchParams.phrase),
+            sideEffect((x) => console.log(`found ${x.length} occurrences`))
+          )
         ),
         explode(1),
-        awaitSideEffect(map(spread(downloadChunk))),
-        unique(pipe(head, prop("url"))),
-        map(([{ server }]) => server.close())
+        awaitSideEffect(
+          map(spread(downloadChunk(downloadParams)(searchParams)))
+        ),
+        awaitSideEffect(
+          pipe(
+            unique(pipe(head, prop("url"))),
+            map(([{ server }]) => server.close())
+          )
+        ),
+        mergeFiles(searchParams)
       )
     )
-  )(name);
+  )(searchParams.name);
 
 (async () => {
   const webTorrentClient = new WebTorrent();
   await main({
+    searchParams: {
+      name: "the fellowship of the ring 1080p",
+      phrase: "a hobbit",
+    },
     webTorrentClient,
-    name: "pretty woman",
     magnet: { maxResults: 1, medium: "Movies" },
     srt: {
-      path: "/home/uri/Downloads/pretty-woman-1990-english-yify-129600/Pretty.Woman.1990.1080p.720p.BluRay.x264.[YTS.MX]-English.srt",
+      // path: "/home/uri/Downloads/pretty-woman-1990-english-yify-129600/Pretty.Woman.1990.1080p.720p.BluRay.x264.[YTS.MX]-English.srt",
       // imdbid: "tt7768848",
       limit: 1,
     },
-    matcher: {
-      phrase: "young lady",
-      maxMatchesPerSrt: 20,
+    downloadParams: {
       bufferLeft: 0,
       bufferRight: 0,
     },
