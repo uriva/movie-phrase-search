@@ -61,12 +61,16 @@ export const torrentToSrts = (params) => async (torrent) => {
   const srtWithin =
     srtWithinFile && parseSrt(await downloadToStr(srtWithinFile));
   if (srtWithin) {
+    console.log("found srt file within torrent, using it.");
     return [srtWithin];
   }
   if (params.path) {
     return [parseSrt(readFileSync(params.path).toString())];
   }
   const vid = findSuffix("mp4")(torrent);
-  if (!vid) return [];
+  if (!vid) {
+    console.error("no video file found in torrent");
+    return [];
+  }
   return srtsForVideoFile(params)(vid);
 };

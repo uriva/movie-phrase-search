@@ -8,7 +8,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "mr cobb",
+        phrase: "i'll be back",
       },
       webTorrentClient,
       magnet: { maxResults: 1, medium: "Movies" },
@@ -22,7 +22,7 @@ import { map } from "gamla";
         bufferRight: 0,
       },
     })
-  )(["inception"]);
+  )(["terminator judgement day 1080p"]);
   console.log("finished");
   webTorrentClient.destroy();
   process.exit();
