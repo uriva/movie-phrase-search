@@ -8,7 +8,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "i'll be back",
+        phrase: "frankly my dear",
       },
       webTorrentClient,
       magnet: { limit: 1, medium: "Movies" },
@@ -20,7 +20,7 @@ import { map } from "gamla";
         bufferRight: 0,
       },
     })
-  )(["the terminator 1984"]);
+  )(["gone with the wind"]);
   console.log("finished");
   webTorrentClient.destroy();
   process.exit();

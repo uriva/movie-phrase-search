@@ -1,5 +1,6 @@
-import { filter, map, pipe, sideEffect } from "gamla";
+import { filter, log, map, pipe, sideEffect } from "gamla";
 
+import OpenSubtitles from "opensubtitles-api";
 import fetch from "node-fetch";
 import { parseSrt } from "./srt.js";
 
@@ -84,23 +85,13 @@ export const srtsForVideoFile = (params) =>
   pipe(
     sideEffect(() => console.log(`computing hash...`)),
     computeHash,
-    (movieHash) =>
-      fetch(
-        "https://api.opensubtitles.org/api/v1/subtitles?" +
-          new URLSearchParams({
-            ...params,
-            movieHash,
-          })
-      ),
-    async (x) => {
-      const text = await x.text();
-      try {
-        return JSON.parse(text);
-      } catch (_) {
-        console.error("could not fetch from opensubtitles");
-        return {};
-      }
-    },
+    (moviehash) =>
+      new OpenSubtitles({
+        useragent: "UserAgent",
+      }).search({
+        moviehash,
+        ...params,
+      }),
     (x) => x["en"] || [],
     map(
       pipe(

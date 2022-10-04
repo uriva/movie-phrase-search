@@ -62,11 +62,9 @@ new OpenSubtitles({
   useragent: "UserAgent",
 })
   .search({
-    hash: log(
-      compute(
-        fs.readFileSync(
-          "/home/uri/uriva/phrase-search/Inception (2010) [1080p]/Inception.2010.1080p.BrRip.x264.YIFY.mp4"
-        )
+    moviehash: compute(
+      fs.readFileSync(
+        "/home/uri/uriva/phrase-search/Inception (2010) [1080p]/Inception.2010.1080p.BrRip.x264.YIFY.mp4"
       )
     ),
     limit: 1,
