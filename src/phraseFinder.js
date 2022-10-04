@@ -24,9 +24,9 @@ import { parseMagnet } from "parse-magnet-uri";
 
 TorrentSearchApi.enablePublicProviders();
 
-const searchMagnets = ({ maxResults, medium }) =>
+const searchMagnets = ({ limit, medium }) =>
   pipe(
-    (movieName) => TorrentSearchApi.search(movieName, medium, maxResults),
+    (movieName) => TorrentSearchApi.search(movieName, medium, limit),
     map(async (x) => await TorrentSearchApi.getMagnet(x)),
     unique(pipe(parseMagnet, prop("infoHash")))
   );

@@ -1,3 +1,8 @@
+This is a fun little program to extract quotes from movies.
+
+Example usage:
+
+```js
 import WebTorrent from "webtorrent";
 import { findAndDownload } from "./phraseFinder.js";
 import { map } from "gamla";
@@ -25,3 +30,8 @@ import { map } from "gamla";
   webTorrentClient.destroy();
   process.exit();
 })();
+```
+
+`medium` can be `"Movies"` or `"Series"`
+
+`srt` can also have `path` if you have your own srt files which you already downloaded, and `imdbid`, if you know the IMDB id of the video.
