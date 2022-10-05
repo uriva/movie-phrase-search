@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "chardet": "^1.4.0",
     "fluent-ffmpeg": "^2.1.2",
     "gamla": "git+https://github.com/uriva/gamlajs.git",
     "node-fetch": "^3.2.10",

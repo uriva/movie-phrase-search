@@ -57,7 +57,13 @@ export const findAndDownload = async ({
           pipe(
             torrentToSrts({ query: searchParams.name, ...srt }),
             mapCat(findPhraseInSrt(searchParams.phrase)),
-            sideEffect((x) => console.log(`found ${x.length} occurrences`))
+            sideEffect((x) =>
+              console.log(
+                `found ${x.length} occurrences:\n${x
+                  .map(prop("startTime"))
+                  .join("\n")}`
+              )
+            )
           )
         ),
         explode(1),

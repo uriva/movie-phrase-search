@@ -3,12 +3,14 @@ import {
   empty,
   filter,
   ifElse,
+  log,
   max,
   pipe,
   prop,
   sideEffect,
 } from "gamla";
 
+import chardet from "chardet";
 import { parseMagnet } from "parse-magnet-uri";
 import { parseSrt } from "./srt.js";
 import { readFileSync } from "fs";
@@ -30,7 +32,7 @@ const downloadToStr = (file) =>
   new Promise((resolve) => {
     file.getBuffer((err, buffer) => {
       if (err) throw err;
-      resolve(buffer.toString());
+      resolve(buffer.toString(chardet.detect(buffer)));
     });
   });
 

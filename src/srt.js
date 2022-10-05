@@ -5,7 +5,7 @@ import SrtParser from "srt-parser-2";
 export const parseSrt = (str) => {
   const result = new SrtParser().fromSrt(str);
   if (!result.length || result.find((entry) => entry.text.length > 500)) {
-    console.error("ignoring malformatted srt file");
+    console.error(`ignoring malformatted srt file: ${str.slice(0, 500)}`);
     return null;
   }
   return result;
