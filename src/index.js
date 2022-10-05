@@ -8,7 +8,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "devil in our pocket",
+        phrase: "type",
       },
       webTorrentClient,
       magnet: { limit: 1, medium: "Movies" },
@@ -16,11 +16,11 @@ import { map } from "gamla";
         limit: 1,
       },
       downloadParams: {
-        bufferLeft: 9,
-        bufferRight: 35,
+        bufferLeft: 0,
+        bufferRight: 0,
       },
     })
-  )(["jodorowsky's dune"]);
+  )(["charlie wilson's war 1080p"]);
   webTorrentClient.destroy();
   process.exit();
 })();

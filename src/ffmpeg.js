@@ -9,26 +9,14 @@ const matchToFilename =
   ({ startTime, endTime }) =>
     `${name}-${phrase}-${startTime}-${endTime}.mp4`;
 
-const srtTimestampToSeconds = (srtTimestamp) => {
-  const [rest, millisecondsString] = srtTimestamp.split(",");
-  const milliseconds = parseInt(millisecondsString, 10);
-  const [hours, minutes, seconds] = map((x) => parseInt(x))(rest.split(":"));
-  return milliseconds * 0.001 + seconds + 60 * minutes + 3600 * hours;
-};
-
 export const downloadMatchFromMp4Url =
   ({ bufferLeft, bufferRight }) =>
   (searchParams) =>
-  ({ url }, { startTime, endTime }) =>
+  ({ url }, { startSeconds, endSeconds, startTime, endTime }) =>
     new Promise((resolve) => {
       ffmpeg(url)
-        .seekInput(srtTimestampToSeconds(startTime) - bufferLeft)
-        .duration(
-          srtTimestampToSeconds(endTime) -
-            srtTimestampToSeconds(startTime) +
-            bufferLeft +
-            bufferRight
-        )
+        .seekInput(startSeconds - bufferLeft)
+        .duration(endSeconds - startSeconds + bufferLeft + bufferRight)
         .output(matchToFilename(searchParams)({ startTime, endTime }))
         .on("end", () => {
           console.log(`written match to file.`);

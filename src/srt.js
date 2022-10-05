@@ -1,9 +1,9 @@
 import { contains, filter, lowercase, map, pipe, prop, replace } from "gamla";
 
-import { default as srtParser2 } from "srt-parser-2";
+import SrtParser from "srt-parser-2";
 
 export const parseSrt = (str) => {
-  const result = new srtParser2.default().fromSrt(str);
+  const result = new SrtParser().fromSrt(str);
   if (!result.length || result.find((entry) => entry.text.length > 500)) {
     console.error("ignoring malformatted srt file");
     return null;
