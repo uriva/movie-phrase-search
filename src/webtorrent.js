@@ -28,11 +28,18 @@ export const magnetToTorrent = (webTorrentClient) => (magnet) =>
     );
   });
 
+const chardetEncodingToBufferParameter = (chardetEncoding) =>
+  chardetEncoding === "windows-1252" ? "utf8" : chardetEncoding;
+
 const downloadToStr = (file) =>
   new Promise((resolve) => {
     file.getBuffer((err, buffer) => {
       if (err) throw err;
-      resolve(buffer.toString(chardet.detect(buffer)));
+      resolve(
+        buffer.toString(
+          chardetEncodingToBufferParameter(chardet.detect(buffer))
+        )
+      );
     });
   });
 
