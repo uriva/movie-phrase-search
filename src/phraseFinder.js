@@ -3,6 +3,7 @@ import {
   explode,
   greater,
   head,
+  identity,
   juxt,
   length,
   log,
@@ -23,9 +24,8 @@ import {
 
 import TorrentSearchApi from "torrent-search-api";
 import { findPhraseInSrt } from "./srt.js";
+import { movieFromQuote } from "./quodb.js";
 import { parseMagnet } from "parse-magnet-uri";
-q
-
 
 TorrentSearchApi.enablePublicProviders();
 
@@ -82,4 +82,4 @@ export const findAndDownload = async ({
         when(pipe(length, greater(1)), mergeMp4s(searchParams))
       )
     )
-  )(searchParams.name);
+  )(searchParams.name || (await movieFromQuote(searchParams.phrase)));

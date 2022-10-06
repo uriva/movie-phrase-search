@@ -1,31 +1,26 @@
 import {
   contains,
   filter,
-  log,
-  lowercase,
-  pipe,
-  replace,
-  filter,
   groupByMany,
   identity,
   join,
   log,
+  lowercase,
   map,
   mapCat,
   pairRight,
   pipe,
   prop,
+  replace,
   second,
-  sideEffect,
   spread,
   unique,
   zip,
 } from "gamla";
 
+import SrtParser from "srt-parser-2";
 import tf from "@tensorflow/tfjs-node-gpu";
 import universalSentenceEncoder from "@tensorflow-models/universal-sentence-encoder";
-
-import SrtParser from "srt-parser-2";
 
 export const parseSrt = (str) => {
   const result = new SrtParser().fromSrt(str);
@@ -41,10 +36,11 @@ const cleanText = pipe(
   ...map((c) => replace(c, ""))(",!?.\"'-♪".split(""))
 );
 
-export const findPhraseInSrt = ml
-  ? findPhraseInSrtMl
-  : (query) =>
-      filter(pipe(prop("text"), cleanText, contains(cleanText(query))));
+export const findPhraseInSrt = (ml) =>
+  ml
+    ? findPhraseInSrtMl
+    : (query) =>
+        filter(pipe(prop("text"), cleanText, contains(cleanText(query))));
 
 const cosineSimilarity = (vec1) => (vec2) =>
   tf.div(tf.dot(vec1, vec2), tf.mul(tf.norm(vec1), tf.norm(vec2)));

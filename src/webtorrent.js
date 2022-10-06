@@ -29,7 +29,9 @@ export const magnetToTorrent = (webTorrentClient) => (magnet) =>
   });
 
 const chardetEncodingToBufferParameter = (chardetEncoding) =>
-  chardetEncoding === "windows-1252" ? "utf8" : chardetEncoding;
+  ["ISO-8859-1", "windows-1252"].includes(chardetEncoding)
+    ? "utf8"
+    : chardetEncoding;
 
 const downloadToStr = (file) =>
   new Promise((resolve) => {

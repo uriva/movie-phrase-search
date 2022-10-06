@@ -8,7 +8,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "mr cobb",
+        phrase: "roads",
       },
       webTorrentClient,
       magnet: { limit: 1, medium: "Movies" },
@@ -21,7 +21,7 @@ import { map } from "gamla";
         bufferRight: 0,
       },
     })
-  )(["inception"]);
+  )(["back to the future 1985"]);
   webTorrentClient.destroy();
   process.exit();
 })();
