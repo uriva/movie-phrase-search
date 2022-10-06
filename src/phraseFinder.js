@@ -24,6 +24,8 @@ import {
 import TorrentSearchApi from "torrent-search-api";
 import { findPhraseInSrt } from "./srt.js";
 import { parseMagnet } from "parse-magnet-uri";
+q
+
 
 TorrentSearchApi.enablePublicProviders();
 
@@ -45,6 +47,7 @@ export const findAndDownload = async ({
   magnet,
   srt,
   webTorrentClient,
+  matches,
 }) =>
   pipe(
     searchMagnets(magnet),
@@ -56,7 +59,7 @@ export const findAndDownload = async ({
           torrentToServer,
           pipe(
             torrentToSrts({ query: searchParams.name, ...srt }),
-            mapCat(await findPhraseInSrt(searchParams.phrase)),
+            mapCat(await findPhraseInSrt(matches.useML)(searchParams.phrase)),
             sideEffect((x) =>
               console.log(
                 `found ${x.length} occurrences:\n${x

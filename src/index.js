@@ -8,19 +8,20 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "type",
+        phrase: "mr cobb",
       },
       webTorrentClient,
       magnet: { limit: 1, medium: "Movies" },
       srt: {
         limit: 1,
       },
+      matches: { useMl: false },
       downloadParams: {
         bufferLeft: 0,
         bufferRight: 0,
       },
     })
-  )(["charlie wilson's war 1080p"]);
+  )(["inception"]);
   webTorrentClient.destroy();
   process.exit();
 })();
