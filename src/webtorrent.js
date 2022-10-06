@@ -43,15 +43,12 @@ const findSuffix = (suffix) =>
     ifElse(empty, always(null), max(prop("length")))
   );
 
-const randomPort = () => Math.floor(1000 + Math.random() * 9000);
-
 export const torrentToServer = (torrent) =>
   new Promise((resolve) => {
-    const port = randomPort();
     const server = torrent.createServer();
-    server.listen(port);
+    server.listen();
     resolve({
-      url: `http://localhost:${port}/${torrent.files.indexOf(
+      url: `http://localhost:${server.address().port}/${torrent.files.indexOf(
         findSuffix("mp4")(torrent)
       )}`,
       server,
