@@ -47,7 +47,6 @@ export const findAndDownload = async ({
   magnet,
   srt,
   webTorrentClient,
-  matches,
 }) =>
   pipe(
     searchMagnets(magnet),
@@ -59,7 +58,7 @@ export const findAndDownload = async ({
           torrentToServer,
           pipe(
             torrentToSrts({ query: searchParams.name, ...srt }),
-            mapCat(await findPhraseInSrt(matches.useML)(searchParams.phrase)),
+            mapCat(findPhraseInSrt(searchParams.phrase)),
             sideEffect((x) =>
               console.log(
                 `found ${x.length} occurrences:\n${x

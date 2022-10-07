@@ -11,10 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tensorflow-models/universal-sentence-encoder": "^1.3.3",
-    "@tensorflow/tfjs-node-gpu": "^3.21.0",
     "chardet": "^1.4.0",
     "fluent-ffmpeg": "^2.1.2",
+    "fuse.js": "^6.6.2",
     "gamla": "github:uriva/gamlajs",
     "node-fetch": "^3.2.10",
     "opensubtitles-api": "^5.1.2",

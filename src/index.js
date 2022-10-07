@@ -8,14 +8,13 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "a box of chocolate",
+        phrase: "life is like a box of chocolates",
       },
       webTorrentClient,
       magnet: { limit: 1, medium: "Movies" },
       srt: {
         limit: 1,
       },
-      matches: { useMl: false },
       downloadParams: {
         bufferLeft: 0,
         bufferRight: 10,
