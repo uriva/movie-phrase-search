@@ -8,7 +8,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "life is like a box of chocolates",
+        phrase: "and in case i don't see you",
       },
       webTorrentClient,
       magnet: { limit: 1, medium: "Movies" },
@@ -17,7 +17,7 @@ import { map } from "gamla";
       },
       downloadParams: {
         bufferLeft: 0,
-        bufferRight: 10,
+        bufferRight: 0,
       },
     })
   )([""]);
