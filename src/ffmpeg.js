@@ -4,10 +4,12 @@ import ffmpeg from "fluent-ffmpeg";
 
 const tempDir = "/tmp/";
 
+const prefix = ({ name, phrase }) => `${name || "auto-detected"}-${phrase}`;
+
 const matchToFilename =
-  ({ name, phrase }) =>
+  (params) =>
   ({ startTime, endTime }) =>
-    `${name}-${phrase}-${startTime}-${endTime}.mp4`;
+    `${prefix(params)}-${startTime}-${endTime}.mp4`;
 
 export const downloadMatchFromMp4Url =
   ({ bufferLeft, bufferRight }) =>
@@ -26,23 +28,21 @@ export const downloadMatchFromMp4Url =
         .run();
     });
 
-export const mergeMp4s =
-  ({ name, phrase }) =>
-  (matches) =>
-    new Promise((resolve) => {
-      if (empty(matches)) {
+export const mergeMp4s = (params) => (matches) =>
+  new Promise((resolve) => {
+    if (empty(matches)) {
+      resolve();
+      return;
+    }
+    const merged = ffmpeg();
+    matches
+      .map(pipe(second, matchToFilename(params)))
+      .forEach((path) => merged.input(path));
+    merged
+      .on("end", () => {
+        console.log("written combined to file");
         resolve();
-        return;
-      }
-      const merged = ffmpeg();
-      matches
-        .map(pipe(second, matchToFilename({ name, phrase })))
-        .forEach((path) => merged.input(path));
-      merged
-        .on("end", () => {
-          console.log("written combined to file");
-          resolve();
-        })
-        .on("error", console.error)
-        .mergeToFile(`${name}-${phrase}.mp4`, tempDir);
-    });
+      })
+      .on("error", console.error)
+      .mergeToFile(`${prefix(params)}.mp4`, tempDir);
+  });

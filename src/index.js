@@ -8,7 +8,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "roads",
+        phrase: "a box of chocolate",
       },
       webTorrentClient,
       magnet: { limit: 1, medium: "Movies" },
@@ -18,10 +18,10 @@ import { map } from "gamla";
       matches: { useMl: false },
       downloadParams: {
         bufferLeft: 0,
-        bufferRight: 0,
+        bufferRight: 10,
       },
     })
-  )(["back to the future 1985"]);
+  )([""]);
   webTorrentClient.destroy();
   process.exit();
 })();
