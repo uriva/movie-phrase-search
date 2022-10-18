@@ -8,14 +8,15 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "and in case i don't see you",
+        phrase: "i never make plans that far ahead",
       },
       webTorrentClient,
-      magnet: { limit: 1, medium: "Movies" },
       srt: {
+        language: "en",
         limit: 1,
       },
       downloadParams: {
+        limit: 2,
         bufferLeft: 0,
         bufferRight: 0,
       },

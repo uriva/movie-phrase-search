@@ -16,8 +16,8 @@ import { map } from "gamla";
         phrase: "i'll be back",
       },
       webTorrentClient,
-      magnet: { limit: 1, medium: "Movies" },
       srt: {
+        language: "en",
         limit: 1,
       },
       downloadParams: {

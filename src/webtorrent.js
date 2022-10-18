@@ -1,31 +1,15 @@
-import {
-  always,
-  empty,
-  filter,
-  ifElse,
-  log,
-  max,
-  pipe,
-  prop,
-  sideEffect,
-} from "gamla";
+import { always, empty, filter, ifElse, log, max, pipe, prop } from "gamla";
 
 import chardet from "chardet";
-import { parseMagnet } from "parse-magnet-uri";
 import { parseSrt } from "./srt.js";
 import { readFileSync } from "fs";
 import { srtsForVideoFile } from "./openSubtitles.js";
 
-export const magnetToTorrent = (webTorrentClient) => (magnet) =>
+export const torrentIdToTorrent = (webTorrentClient) => (torrentId) =>
   new Promise((resolve) => {
-    webTorrentClient.add(
-      sideEffect((magnet) =>
-        console.log(`fetching torrent ${parseMagnet(magnet).name}...`)
-      )(magnet),
-      async (torrent) => {
-        resolve(torrent);
-      }
-    );
+    webTorrentClient.add(torrentId, (torrent) => {
+      resolve(torrent);
+    });
   });
 
 const chardetEncodingToBufferParameter = (chardetEncoding) =>
@@ -45,12 +29,16 @@ const downloadToStr = (file) =>
     });
   });
 
-const findSuffix = (suffix) =>
+const findSuffix = (suffixes) =>
   pipe(
     prop("files"),
-    filter(({ name }) => name.endsWith(`.${suffix}`)),
+    filter(({ name }) =>
+      suffixes.some((suffix) => name.endsWith(`.${suffix}`))
+    ),
     ifElse(empty, always(null), max(prop("length")))
   );
+
+const findVideoFiles = findSuffix(["avi", "mp4", "mkv"]);
 
 export const torrentToServer = (torrent) =>
   new Promise((resolve) => {
@@ -58,14 +46,14 @@ export const torrentToServer = (torrent) =>
     server.listen();
     resolve({
       url: `http://localhost:${server.address().port}/${torrent.files.indexOf(
-        findSuffix("mp4")(torrent)
+        findVideoFiles(torrent)
       )}`,
       server,
     });
   });
 
 export const torrentToSrts = (params) => async (torrent) => {
-  const srtWithinFile = findSuffix("srt")(torrent);
+  const srtWithinFile = findSuffix(["srt"])(torrent);
   const srtWithin =
     srtWithinFile && parseSrt(await downloadToStr(srtWithinFile));
   if (srtWithin) {
@@ -75,7 +63,7 @@ export const torrentToSrts = (params) => async (torrent) => {
   if (params.path) {
     return [parseSrt(readFileSync(params.path).toString())];
   }
-  const vid = findSuffix("mp4")(torrent);
+  const vid = findVideoFiles(torrent);
   if (!vid) {
     console.error("no video file found in torrent");
     return [];

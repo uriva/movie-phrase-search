@@ -1,4 +1,4 @@
-import { filter, log, map, pipe, sideEffect } from "gamla";
+import { filter, log, map, pipe, prop, sideEffect } from "gamla";
 
 import OpenSubtitles from "opensubtitles-api";
 import fetch from "node-fetch";
@@ -81,10 +81,8 @@ const computeHash = (fileTorrent) =>
     binl2hex
   )(fileTorrent.length);
 
-export const srtsForVideoFile = (params) =>
+const hashToSubtitles = (params) =>
   pipe(
-    sideEffect(() => console.log(`computing hash...`)),
-    computeHash,
     (moviehash) =>
       new OpenSubtitles({
         useragent: "UserAgent",
@@ -92,14 +90,15 @@ export const srtsForVideoFile = (params) =>
         moviehash,
         ...params,
       }),
-    (x) => x["en"] || [],
-    map(
-      pipe(
-        ({ url }) => fetch(url),
-        (r) => r.text(),
-        parseSrt
-      )
-    ),
+    (x) => x[params.language] || []
+  );
+
+export const srtsForVideoFile = (params) =>
+  pipe(
+    sideEffect(() => console.log(`computing hash...`)),
+    computeHash,
+    hashToSubtitles(params),
+    map(pipe(prop("url"), fetch, (r) => r.text(), parseSrt)),
     filter((x) => x),
     sideEffect((x) => console.log(`found ${x.length} srt files`))
   );

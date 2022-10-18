@@ -1,4 +1,4 @@
-import { assert, head, map, nonempty, pipe, prop } from "gamla";
+import { assert, head, log, map, nonempty, pipe, prop } from "gamla";
 
 const search = pipe(
   (query) => `https://api.quodb.com/search/${query}`,
@@ -11,6 +11,6 @@ const search = pipe(
 export const movieFromQuote = pipe(
   search,
   assert(nonempty, "fatal: could not find anything with this quote"),
-  map(({ title, year }) => `${title} ${year}`),
-  head,
+  map(prop("title")),
+  head
 );

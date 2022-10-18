@@ -10,7 +10,7 @@ export const parseSrt = (str) => {
     console.error(`ignoring malformatted srt file: ${str.slice(0, 500)}`);
     return null;
   }
-  writeFileSync("./fg.srt", str);
+  writeFileSync("./subs.srt", str);
   return result;
 };
 
