@@ -8,7 +8,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "i never make plans that far ahead",
+        phrase: "i only hope that he's lucky",
       },
       webTorrentClient,
       srt: {
@@ -21,7 +21,7 @@ import { map } from "gamla";
         bufferRight: 0,
       },
     })
-  )([""]);
+  )(["match point"]);
   webTorrentClient.destroy();
   process.exit();
-})();
+})().catch(console.error);
