@@ -46,7 +46,7 @@ const perTorrent = (searchParams, downloadParams, srt, webTorrentClient) =>
       torrentToServer,
       pipe(
         torrentToSrts({ query: searchParams.name, ...srt }),
-        mapCat(findPhraseInSrt(searchParams.phrase)),
+        mapCat(findPhraseInSrt(searchParams.phrase, searchParams.phraseEnd)),
         sideEffect((x) =>
           console.log(
             `found ${x.length} occurrences:\n${x

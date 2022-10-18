@@ -1,4 +1,4 @@
-import { log, prop } from "gamla";
+import { filter, log, map, pipe, product, prop, zip } from "gamla";
 
 import Fuse from "fuse.js";
 import SrtParser from "srt-parser-2";
@@ -14,10 +14,36 @@ export const parseSrt = (str) => {
   return result;
 };
 
-export const findPhraseInSrt = (query) => (srt) =>
-  new Fuse(srt, {
+const mergeEntries = ([a, b]) => ({
+  ...a,
+  id: a.id + "->" + b.id,
+  endTime: b.endTime,
+  endSeconds: b.endSeconds,
+  text: a.text + "->" + b.text,
+});
+
+const isValidEntryPair =
+  (maxSpan) =>
+  ([a, b]) =>
+    maxSpan > b.startSeconds - a.startSeconds &&
+    b.startSeconds - a.startSeconds > 0;
+
+const srtToSearch = (srt) => {
+  const index = new Fuse(srt, {
     keys: ["text"],
     threshold: 0.5,
-  })
-    .search(query)
-    .map(prop("item"));
+  });
+  return (query) => index.search(query).map(prop("item"));
+};
+
+export const findPhraseInSrt = (startPhrase, endPhrase) => (srt) => {
+  const search = srtToSearch(srt);
+  return endPhrase
+    ? pipe(
+        product,
+        filter(isValidEntryPair(60)),
+        map(mergeEntries),
+        log
+      )([search(startPhrase), search(endPhrase)])
+    : search(startPhrase);
+};

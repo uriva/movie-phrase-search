@@ -8,7 +8,8 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "i only hope that he's lucky",
+        phrase: "you know what I do",
+        phraseEnd: "just hang up and try again",
       },
       webTorrentClient,
       srt: {
@@ -18,10 +19,10 @@ import { map } from "gamla";
       downloadParams: {
         limit: 2,
         bufferLeft: 0,
-        bufferRight: 0,
+        bufferRight: 5,
       },
     })
-  )(["match point"]);
+  )(["what about bob 1991"]);
   webTorrentClient.destroy();
   process.exit();
 })().catch(console.error);
