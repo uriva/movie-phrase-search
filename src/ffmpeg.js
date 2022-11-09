@@ -19,6 +19,7 @@ export const downloadMatchFromMp4Url =
       ffmpeg(url)
         .seekInput(startSeconds - bufferLeft)
         .duration(endSeconds - startSeconds + bufferLeft + bufferRight)
+        .outputOptions("-crf 28")
         .output(matchToFilename(searchParams)({ startTime, endTime }))
         .on("end", () => {
           console.log(`written match to file.`);

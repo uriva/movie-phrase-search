@@ -19,8 +19,8 @@ import { map } from "gamla";
       },
       downloadParams: {
         limit: 2,
-        bufferLeft: 0,
-        bufferRight: 0,
+        bufferLeft: -42,
+        bufferRight: 42,
       },
     }),
   )(["deconstructing harry 1997 1080p"]);

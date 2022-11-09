@@ -21,7 +21,7 @@ import { map } from "gamla";
         limit: 1,
       },
       downloadParams: {
-        bufferLeft: 0,
+        bufferLeft: 40,
         bufferRight: 0,
       },
     }),
