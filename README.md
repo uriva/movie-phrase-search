@@ -13,7 +13,7 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "i'll be back",
+        phraseStart: "i'll be back",
       },
       webTorrentClient,
       srt: {
@@ -24,7 +24,7 @@ import { map } from "gamla";
         bufferLeft: 0,
         bufferRight: 0,
       },
-    })
+    }),
   )(["the terminator 1984"]);
   console.log("finished");
   webTorrentClient.destroy();

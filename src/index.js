@@ -8,8 +8,9 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phrase: "you know what I do",
-        phraseEnd: "just hang up and try again",
+        phraseStart: "The interesting thing to me",
+        phraseEnd: "Oh, that's bullshit.",
+        maxSpan: 120,
       },
       webTorrentClient,
       srt: {
@@ -19,10 +20,10 @@ import { map } from "gamla";
       downloadParams: {
         limit: 2,
         bufferLeft: 0,
-        bufferRight: 5,
+        bufferRight: 0,
       },
-    })
-  )(["what about bob 1991"]);
+    }),
+  )(["deconstructing harry 1997 1080p"]);
   webTorrentClient.destroy();
   process.exit();
 })().catch(console.error);
