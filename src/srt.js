@@ -28,24 +28,24 @@ const isValidEntryPair =
     maxSpan > b.startSeconds - a.startSeconds &&
     b.startSeconds - a.startSeconds > 0;
 
-const srtToSearch = (srt) => {
-  const index = new Fuse(srt, {
-    keys: ["text"],
-    threshold: 0.1,
-  });
-  return (query) => index.search(query).map(prop("item"));
-};
-
-export const findPhraseInSrt =
-  ({ phraseStart, phraseEnd, maxSpan }) =>
-  (srt) => {
-    const search = srtToSearch(srt);
-    return phraseEnd
-      ? pipe(
-          product,
-          filter(isValidEntryPair(maxSpan)),
-          map(mergeEntries),
-          log,
-        )([search(phraseStart), search(phraseEnd)])
-      : search(phraseStart);
-  };
+export const findPhraseInSrt = ({ phraseStart, phraseEnd, maxSpan }) =>
+  pipe(
+    (srt) =>
+      new Fuse(srt, {
+        keys: ["text"],
+        threshold: 0.1,
+        isCaseSensitive: false,
+        ignoreLocation: true,
+      }),
+    (index) => (query) => index.search(query).map(prop("item")),
+    (search) =>
+      phraseEnd
+        ? pipe(
+            map(search),
+            product,
+            filter(isValidEntryPair(maxSpan)),
+            map(mergeEntries),
+            log,
+          )([phraseStart, phraseEnd])
+        : search(phraseStart),
+  );

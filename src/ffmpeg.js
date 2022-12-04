@@ -12,17 +12,21 @@ const matchToFilename =
     `${prefix(params)}-${startTime}-${endTime}.mp4`;
 
 export const downloadMatchFromMp4Url =
-  ({ bufferLeft, bufferRight }) =>
+  ({ bufferLeft, bufferRight, offset }) =>
   (searchParams) =>
   ({ url }, { startSeconds, endSeconds, startTime, endTime }) =>
     new Promise((resolve) => {
       ffmpeg(url)
-        .seekInput(startSeconds - bufferLeft)
+        .seekInput(startSeconds - bufferLeft + offset)
         .duration(endSeconds - startSeconds + bufferLeft + bufferRight)
-        .outputOptions("-crf 28")
         .output(matchToFilename(searchParams)({ startTime, endTime }))
         .on("end", () => {
-          console.log(`written match to file.`);
+          console.log(
+            `written match to file: ${matchToFilename(searchParams)({
+              startTime,
+              endTime,
+            })}`,
+          );
           resolve();
         })
         .on("error", console.error)
