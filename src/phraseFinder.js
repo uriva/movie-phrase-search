@@ -1,11 +1,10 @@
+import { downloadMatchFromMp4Url, mergeMp4s } from "./ffmpeg.js";
 import {
-  always,
   explode,
   greater,
   head,
   juxt,
   length,
-  log,
   map,
   mapCat,
   pipe,
@@ -16,7 +15,6 @@ import {
   unique,
   when,
 } from "gamla";
-import { downloadMatchFromMp4Url, mergeMp4s } from "./ffmpeg.js";
 import {
   torrentIdToTorrent,
   torrentToServer,
@@ -36,7 +34,7 @@ const searchTorrent = pipe(
   fetch,
   (x) => x.json(),
   sideEffect((x) => console.log(`found ${x.length} torrents`)),
-  map(prop("info_hash"))
+  map(prop("info_hash")),
 );
 
 const perTorrent = (searchParams, downloadParams, srt, webTorrentClient) =>
@@ -51,22 +49,22 @@ const perTorrent = (searchParams, downloadParams, srt, webTorrentClient) =>
           console.log(
             `found ${x.length} occurrences:\n${x
               .map(prop("startTime"))
-              .join("\n")}`
-          )
-        )
-      )
+              .join("\n")}`,
+          ),
+        ),
+      ),
     ),
     explode(1),
     awaitSideEffect(
-      map(spread(downloadMatchFromMp4Url(downloadParams)(searchParams)))
+      map(spread(downloadMatchFromMp4Url(downloadParams)(searchParams))),
     ),
     awaitSideEffect(
       pipe(
         unique(pipe(head, prop("url"))),
-        map(([{ server }]) => server.close())
-      )
+        map(([{ server }]) => server.close()),
+      ),
     ),
-    when(pipe(length, greater(1)), mergeMp4s(searchParams))
+    when(pipe(length, greater(1)), mergeMp4s(searchParams)),
   );
 
 export const findAndDownload = pipe(
@@ -79,10 +77,10 @@ export const findAndDownload = pipe(
         (await movieFromQuote(params.searchParams.phrase)),
     },
   }),
-  async ({ searchParams, downloadParams, srt, webTorrentClient }) =>
+  ({ searchParams, downloadParams, srt, webTorrentClient }) =>
     pipe(
       searchTorrent,
       take(1),
-      map(perTorrent(searchParams, downloadParams, srt, webTorrentClient))
-    )(searchParams.name)
+      map(perTorrent(searchParams, downloadParams, srt, webTorrentClient)),
+    )(searchParams.name),
 );

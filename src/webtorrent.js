@@ -1,4 +1,4 @@
-import { always, empty, filter, ifElse, log, max, pipe, prop } from "gamla";
+import { always, empty, filter, ifElse, max, pipe, prop } from "gamla";
 
 import chardet from "chardet";
 import { parseSrt } from "./srt.js";
@@ -23,8 +23,8 @@ const downloadToStr = (file) =>
       if (err) throw err;
       resolve(
         buffer.toString(
-          chardetEncodingToBufferParameter(chardet.detect(buffer))
-        )
+          chardetEncodingToBufferParameter(chardet.detect(buffer)),
+        ),
       );
     });
   });
@@ -33,9 +33,9 @@ const findSuffix = (suffixes) =>
   pipe(
     prop("files"),
     filter(({ name }) =>
-      suffixes.some((suffix) => name.endsWith(`.${suffix}`))
+      suffixes.some((suffix) => name.endsWith(`.${suffix}`)),
     ),
-    ifElse(empty, always(null), max(prop("length")))
+    ifElse(empty, always(null), max(prop("length"))),
   );
 
 const findVideoFiles = findSuffix(["avi", "mp4", "mkv"]);
@@ -46,7 +46,7 @@ export const torrentToServer = (torrent) =>
     server.listen();
     resolve({
       url: `http://localhost:${server.address().port}/${torrent.files.indexOf(
-        findVideoFiles(torrent)
+        findVideoFiles(torrent),
       )}`,
       server,
     });

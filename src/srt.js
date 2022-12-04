@@ -1,4 +1,4 @@
-import { filter, log, map, pipe, product, prop } from "gamla";
+import { filter, map, pipe, product, prop } from "gamla";
 
 import Fuse from "fuse.js";
 import SrtParser from "srt-parser-2";
@@ -45,7 +45,6 @@ export const findPhraseInSrt = ({ phraseStart, phraseEnd, maxSpan }) =>
             product,
             filter(isValidEntryPair(maxSpan)),
             map(mergeEntries),
-            log,
           )([phraseStart, phraseEnd])
         : search(phraseStart),
   );

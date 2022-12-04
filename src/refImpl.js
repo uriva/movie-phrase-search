@@ -1,10 +1,9 @@
 import OpenSubtitles from "opensubtitles-api";
 import fs from "fs";
-import { log } from "gamla";
 function compute(file) {
-  var HASH_CHUNK_SIZE = 65536, //64 * 1024
-    longs = [],
-    temp = file.length;
+  const HASH_CHUNK_SIZE = 65536; // 64 * 1024
+  const longs = [];
+  let temp = file.length;
 
   function read(start, end) {
     if (end === undefined) {
@@ -16,16 +15,16 @@ function compute(file) {
 
   function process(chunk) {
     chunk = chunk.toString("binary");
-    for (var i = 0; i < chunk.length; i++) {
+    for (let i = 0; i < chunk.length; i++) {
       longs[(i + 8) % 8] += chunk.charCodeAt(i);
     }
   }
 
   function binl2hex(a) {
-    var b = 255,
-      d = "0123456789abcdef",
-      e = "",
-      c = 7;
+    const b = 255;
+    const d = "0123456789abcdef";
+    let e = "";
+    let c = 7;
 
     a[1] += a[0] >> 8;
     a[0] = a[0] & b;
@@ -48,7 +47,7 @@ function compute(file) {
     return e;
   }
 
-  for (var i = 0; i < 8; i++) {
+  for (let i = 0; i < 8; i++) {
     longs[i] = temp & 255;
     temp = temp >> 8;
   }
@@ -64,8 +63,8 @@ new OpenSubtitles({
   .search({
     moviehash: compute(
       fs.readFileSync(
-        "/home/uri/uriva/phrase-search/Inception (2010) [1080p]/Inception.2010.1080p.BrRip.x264.YIFY.mp4"
-      )
+        "/home/uri/uriva/phrase-search/Inception (2010) [1080p]/Inception.2010.1080p.BrRip.x264.YIFY.mp4",
+      ),
     ),
     limit: 1,
   })
