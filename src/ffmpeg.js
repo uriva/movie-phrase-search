@@ -1,8 +1,6 @@
-import { empty, letIn, pipe, second } from "gamla";
-
 import ffmpeg from "fluent-ffmpeg";
+import { letIn } from "gamla";
 
-const tempDir = "/tmp/";
 const prefix = ({ name, phraseStart, phraseEnd }) =>
   `${name || "auto-detected"}-${phraseStart}${
     phraseEnd ? "->" + phraseEnd : ""
@@ -27,28 +25,9 @@ export const downloadMatchFromMp4Url =
             .output(outputFilename)
             .on("end", () => {
               console.log(`written match to file: ${outputFilename}`);
-              resolve();
+              resolve(outputFilename);
             })
             .on("error", console.error)
             .run();
         }),
     );
-
-export const mergeMp4s = (params) => (matches) =>
-  new Promise((resolve) => {
-    if (empty(matches)) {
-      resolve();
-      return;
-    }
-    const merged = ffmpeg();
-    matches
-      .map(pipe(second, matchToFilename(params)))
-      .forEach((path) => merged.input(path));
-    merged
-      .on("end", () => {
-        console.log("written combined to file");
-        resolve();
-      })
-      .on("error", console.error)
-      .mergeToFile(`${prefix(params)}.mp4`, tempDir);
-  });

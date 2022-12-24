@@ -1,19 +1,13 @@
-import { downloadMatchFromMp4Url, mergeMp4s } from "./ffmpeg.js";
 import {
   explode,
-  greater,
   head,
   juxt,
-  length,
   map,
   mapCat,
   pipe,
   prop,
   sideEffect,
-  spread,
   take,
-  unique,
-  when,
 } from "gamla";
 import {
   torrentIdToTorrent,
@@ -21,13 +15,9 @@ import {
   torrentToSrts,
 } from "./webtorrent.js";
 
+import { downloadMatchFromMp4Url } from "./ffmpeg.js";
 import { findPhraseInSrt } from "./srt.js";
 import { movieFromQuote } from "./quodb.js";
-
-const awaitSideEffect = (f) => async (x) => {
-  await f(x);
-  return x;
-};
 
 const searchTorrent = pipe(
   (query) => `https://apibay.org/q.php?q=${query}&cat=200`,
@@ -55,16 +45,13 @@ const perTorrent = (searchParams, downloadParams, srt, webTorrentClient) =>
       ),
     ),
     explode(1),
-    awaitSideEffect(
-      map(spread(downloadMatchFromMp4Url(downloadParams)(searchParams))),
-    ),
-    awaitSideEffect(
-      pipe(
-        unique(pipe(head, prop("url"))),
-        map(([{ server }]) => server.close()),
-      ),
-    ),
-    when(pipe(length, greater(1)), mergeMp4s(searchParams)),
+    map(async (stuff) => {
+      const filename = await downloadMatchFromMp4Url(downloadParams)(
+        searchParams,
+      )(...stuff);
+      stuff[0].server.close();
+      return filename;
+    }),
   );
 
 export const findAndDownload = pipe(
@@ -81,6 +68,7 @@ export const findAndDownload = pipe(
     pipe(
       searchTorrent,
       take(1),
-      map(perTorrent(searchParams, downloadParams, srt, webTorrentClient)),
+      mapCat(perTorrent(searchParams, downloadParams, srt, webTorrentClient)),
+      head,
     )(searchParams.name),
 );
