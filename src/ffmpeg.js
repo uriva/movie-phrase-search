@@ -22,6 +22,13 @@ export const downloadMatchFromMp4Url =
           ffmpeg(url)
             .seekInput(startSeconds - bufferLeft + offset)
             .duration(endSeconds - startSeconds + bufferLeft + bufferRight)
+            // Whatsapp/telegram compatibility flags.
+            .outputOptions([
+              "-c:v libx264",
+              "-profile:v baseline",
+              "-level 3.0",
+              "-pix_fmt yuv420p",
+            ])
             .output(outputFilename)
             .on("end", () => {
               console.log(`written match to file: ${outputFilename}`);
