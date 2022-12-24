@@ -22,31 +22,35 @@ bot.on("text", async (ctx) => {
   };
   ctx.reply(`searching:\n${JSON.stringify(searchParams)}`);
   const webTorrentClient = new WebTorrent();
-  const filename = await findAndDownload({
-    searchParams,
-    webTorrentClient,
-    srt: {
-      language: "en",
-      limit: 1,
-    },
-    downloadParams: {
-      limit: 2,
-      offset: offset ? parseInt(offset) : 0,
-      bufferLeft: 0,
-      bufferRight: 0,
-    },
-  });
-  if (filename) {
-    ctx.reply("Found it! Sending you the video...");
-    ctx
-      .replyWithVideo({
-        source: fs.createReadStream(filename),
-      })
-      .then(() => fs.unlink(filename, () => {}));
-  } else {
-    ctx.reply(
-      "Couldn't find it. Try adding the movie year and quality, e.g. the matrix 1999 1080p.",
-    );
+  try {
+    const filename = await findAndDownload({
+      searchParams,
+      webTorrentClient,
+      srt: {
+        language: "en",
+        limit: 1,
+      },
+      downloadParams: {
+        limit: 2,
+        offset: offset ? parseInt(offset) : 0,
+        bufferLeft: 0,
+        bufferRight: 0,
+      },
+    });
+    if (filename) {
+      ctx.reply("Found it! Sending you the video...");
+      ctx
+        .replyWithVideo({
+          source: fs.createReadStream(filename),
+        })
+        .then(() => fs.unlink(filename, () => {}));
+    } else {
+      ctx.reply(
+        "Couldn't find it. Try adding the movie year and quality, e.g. the matrix 1999 1080p.",
+      );
+    }
+  } catch (e) {
+    ctx.reply(JSON.stringify(e));
   }
   webTorrentClient.destroy();
 });
