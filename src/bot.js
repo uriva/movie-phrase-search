@@ -13,14 +13,27 @@ bot.on("text", async (ctx) => {
     ctx.reply(helpText);
     return;
   }
-  const [name, phraseStart, phraseEnd, offset] = ctx.message.text.split("\n");
+  const [name, phraseStart, phraseEnd, offset, bufferLeft, bufferRight] =
+    ctx.message.text.split("\n");
   const searchParams = {
     name,
     phraseStart,
     phraseEnd,
     maxSpan: 120,
   };
-  ctx.reply(`searching:\n${JSON.stringify(searchParams)}`);
+  const downloadParams = {
+    limit: 2,
+    offset: offset ? parseFloat(offset) : 0,
+    bufferLeft: bufferLeft ? parseFloat(bufferLeft) : 0,
+    bufferRight: bufferRight ? parseFloat(bufferRight) : 0,
+  };
+  ctx.reply(
+    `search params:\n${JSON.stringify(
+      searchParams,
+      null,
+      2,
+    )}\n\nDownload params:\n${JSON.stringify(downloadParams, null, 2)}`,
+  );
   const webTorrentClient = new WebTorrent();
   try {
     const filename = await findAndDownload({
@@ -30,12 +43,7 @@ bot.on("text", async (ctx) => {
         language: "en",
         limit: 1,
       },
-      downloadParams: {
-        limit: 2,
-        offset: offset ? parseInt(offset) : 0,
-        bufferLeft: 0,
-        bufferRight: 0,
-      },
+      downloadParams,
     });
     if (filename) {
       ctx.reply("Found it! Sending you the video...");
