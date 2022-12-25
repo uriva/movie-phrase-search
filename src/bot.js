@@ -54,7 +54,7 @@ bot.on("text", async (ctx) => {
         .then(() => fs.unlink(filename, () => {}));
     } else {
       ctx.reply(
-        "Couldn't find it. Try adding the movie year and quality, e.g. the matrix 1999 1080p.",
+        "Couldn't find the movie or quote. Try adding the movie year and quality, e.g. the matrix 1999 1080p.",
       );
     }
   } catch (e) {
