@@ -6,7 +6,7 @@ const helpText =
   "You can search by sending me the movie name, quote start, quote end, offset in seconds, each in its own line.\n\nExample:\n\nthe departed\nmarriage is an important part\ncock must work\n-4";
 
 export const runTelegramBot = ({ telegramToken }) => {
-  const bot = new Telegraf(telegramToken);
+  const bot = new Telegraf(telegramToken, { handlerTimeout: 300000 });
   bot.catch((err, ctx) => {
     console.error(err);
     ctx.reply(`Ugh something went wrong:\n\n${JSON.stringify(err)}`);
