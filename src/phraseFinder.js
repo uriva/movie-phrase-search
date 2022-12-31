@@ -7,7 +7,6 @@ import {
   pipe,
   prop,
   sideEffect,
-  take,
 } from "gamla";
 import {
   torrentIdToTorrent,
@@ -45,13 +44,14 @@ const perTorrent = (searchParams, downloadParams, srt, webTorrentClient) =>
       ),
     ),
     explode(1),
-    map(async (stuff) => {
+    head,
+    async (stuff) => {
       const filename = await downloadMatchFromMp4Url(downloadParams)(
         searchParams,
       )(...stuff);
       stuff[0].server.close();
       return filename;
-    }),
+    },
   );
 
 export const findAndDownload = pipe(
@@ -67,8 +67,7 @@ export const findAndDownload = pipe(
   ({ searchParams, downloadParams, srt, webTorrentClient }) =>
     pipe(
       searchTorrent,
-      take(1),
-      mapCat(perTorrent(searchParams, downloadParams, srt, webTorrentClient)),
       head,
+      perTorrent(searchParams, downloadParams, srt, webTorrentClient),
     )(searchParams.name),
 );
