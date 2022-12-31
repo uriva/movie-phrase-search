@@ -1,13 +1,9 @@
-import * as dotenv from "dotenv";
-
 import { ETwitterStreamEvent, TwitterApi } from "twitter-api-v2";
 
 import { botHelper } from "./botUtils.js";
 import { log } from "gamla";
 
-dotenv.config();
-
-export const main = async ({
+export const runTwitterBot = async ({
   accessToken,
   accessSecret,
   appKey,
@@ -67,8 +63,6 @@ export const getAccessToken = async ({
     console.error(e);
   }
 };
-
-main(process.env);
 
 export const writeRules = async ({ command, bearerToken }) => {
   const bearerTokenClient = new TwitterApi(bearerToken);
