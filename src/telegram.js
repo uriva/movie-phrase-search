@@ -7,6 +7,10 @@ const helpText =
 
 export const runTelegramBot = ({ telegramToken }) => {
   const bot = new Telegraf(telegramToken);
+  bot.catch((err, ctx) => {
+    console.error(err);
+    ctx.reply(`Ugh something went wrong:\n\n${JSON.stringify(err)}`);
+  });
   bot.start((ctx) => ctx.reply(helpText));
   bot.startPolling();
   bot.on("text", (ctx) => {
