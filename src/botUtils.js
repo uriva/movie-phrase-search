@@ -40,11 +40,15 @@ export const parseParams = (input) => {
     .split(",")
     .map(Number);
   return {
-    movie,
-    startQuote: startQuote.trim(),
-    endQuote: endQuote ? endQuote.trim() : null,
-    bufferLeft,
-    bufferRight,
-    offset,
+    searchParams: {
+      name: movie,
+      phraseStart: startQuote.trim(),
+      phraseEnd: endQuote ? endQuote.trim() : null,
+    },
+    downloadParams: {
+      bufferLeft,
+      bufferRight,
+      offset,
+    },
   };
 };
