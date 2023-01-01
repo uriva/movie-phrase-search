@@ -14,6 +14,17 @@ test("parseParams", () => {
       },
     ],
     [
+      '"i\'m going to enjoy watching you die"\nthe matrix 1999',
+      {
+        movie: "the matrix 1999",
+        startQuote: "i'm going to enjoy watching you die",
+        endQuote: null,
+        bufferLeft: 0,
+        bufferRight: 0,
+        offset: 0,
+      },
+    ],
+    [
       "i can't believe it...you said it. - some movie",
       {
         movie: "some movie",

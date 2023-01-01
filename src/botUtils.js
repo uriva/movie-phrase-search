@@ -30,13 +30,21 @@ export const botHelper = (onParams, success, failure) =>
 
 export const parseParams = (input) => {
   const [quote, context] = input.replace(/"/g, "").split("context:");
-  const movie = quote.slice(quote.indexOf("-") + 1).trim();
-  const [startQuote, endQuote] = quote
-    .slice(0, quote.indexOf("-") - 1)
-    .split("...");
+  const separatorLocation = quote.includes("-")
+    ? quote.indexOf("-")
+    : quote.indexOf("\n");
+  const movie = quote.slice(separatorLocation + 1).trim();
+  const [startQuote, endQuote] = quote.slice(0, separatorLocation).split("...");
   const [bufferLeft, bufferRight, offset] = (context || "0,0,0")
     .trim()
     .split(",")
     .map(Number);
-  return { movie, startQuote, endQuote, bufferLeft, bufferRight, offset };
+  return {
+    movie,
+    startQuote: startQuote.trim(),
+    endQuote: endQuote ? endQuote.trim() : null,
+    bufferLeft,
+    bufferRight,
+    offset,
+  };
 };
