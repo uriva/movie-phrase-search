@@ -5,7 +5,7 @@ import SrtParser from "srt-parser-2";
 import { writeFileSync } from "fs";
 
 export const parseSrt = (str) => {
-  const result = new SrtParser().fromSrt(str);
+  const result = new SrtParser.default().fromSrt(str);
   if (!result.length || result.find((entry) => entry.text.length > 500)) {
     console.error(`ignoring malformatted srt file: ${str.slice(0, 500)}`);
     return null;
