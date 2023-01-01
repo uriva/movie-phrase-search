@@ -1,22 +1,17 @@
-import { pipe, sideEffect, split } from "gamla";
+import { pipe, sideEffect } from "gamla";
 
 import WebTorrent from "webtorrent";
 import { findAndDownload } from "./phraseFinder.js";
 import fs from "fs";
 
+const example =
+  'It should look like this: "may the force be with you - star wars".';
+
 export const botHelper = (onParams, success, failure) =>
   pipe(parseParams, sideEffect(onParams), async (params) => {
     const webTorrentClient = new WebTorrent();
-    if (!params.searchParams.name) {
-      failure(
-        "I didn't get the movie name. Place each parameter on its own line.",
-      );
-      return;
-    }
-    if (!params.searchParams.phraseStart) {
-      failure(
-        "I got the movie name but not the quote. Each parameter should be on its own line.",
-      );
+    if (!params.searchParams.name || !params.searchParams.phraseStart) {
+      failure(`I didn't understand the movie name or quote. ${example}`);
       return;
     }
     try {
@@ -33,24 +28,15 @@ export const botHelper = (onParams, success, failure) =>
     webTorrentClient.destroy();
   });
 
-const parseParams = pipe(
-  split("\n"),
-  ([name, phraseStart, phraseEnd, offset, bufferLeft, bufferRight]) => ({
-    searchParams: {
-      name,
-      phraseStart,
-      phraseEnd,
-      maxSpan: 120,
-    },
-    srt: {
-      language: "en",
-      limit: 1,
-    },
-    downloadParams: {
-      limit: 2,
-      offset: offset ? parseFloat(offset) : 0,
-      bufferLeft: bufferLeft ? parseFloat(bufferLeft) : 0,
-      bufferRight: bufferRight ? parseFloat(bufferRight) : 0,
-    },
-  }),
-);
+export const parseParams = (input) => {
+  const [quote, context] = input.replace(/"/g, "").split("context:");
+  const movie = quote.slice(quote.indexOf("-") + 1).trim();
+  const [startQuote, endQuote] = quote
+    .slice(0, quote.indexOf("-") - 1)
+    .split("...");
+  const [bufferLeft, bufferRight, offset] = (context || "0,0,0")
+    .trim()
+    .split(",")
+    .map(Number);
+  return { movie, startQuote, endQuote, bufferLeft, bufferRight, offset };
+};
