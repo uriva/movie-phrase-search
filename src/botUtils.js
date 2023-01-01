@@ -7,6 +7,18 @@ import fs from "fs";
 export const botHelper = (onParams, success, failure) =>
   pipe(parseParams, sideEffect(onParams), async (params) => {
     const webTorrentClient = new WebTorrent();
+    if (!params.searchParams.name) {
+      failure(
+        "I didn't get the movie name. Place each parameter on its own line.",
+      );
+      return;
+    }
+    if (!params.searchParams.phraseStart) {
+      failure(
+        "I got the movie name but not the quote. Each parameter should be on its own line.",
+      );
+      return;
+    }
     try {
       const filename = await findAndDownload({ ...params, webTorrentClient });
       if (filename) {

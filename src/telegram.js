@@ -26,9 +26,10 @@ export const runTelegramBot = ({ telegramToken }) => {
           source: fs.createReadStream(filepath),
         });
       },
-      () =>
+      (reason) =>
         ctx.reply(
-          "Couldn't find the movie or quote. Try adding the movie year and quality, e.g. the matrix 1999 1080p.",
+          reason ||
+            "Couldn't find the movie or quote. Try adding the movie year and quality, e.g. the matrix 1999 1080p.",
         ),
     )(ctx.message.text);
   });

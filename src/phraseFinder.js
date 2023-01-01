@@ -1,6 +1,9 @@
 import {
+  always,
   explode,
   head,
+  identity,
+  ifElse,
   juxt,
   map,
   mapCat,
@@ -45,13 +48,17 @@ const perTorrent = (searchParams, downloadParams, srt, webTorrentClient) =>
     ),
     explode(1),
     head,
-    async (stuff) => {
-      const filename = await downloadMatchFromMp4Url(downloadParams)(
-        searchParams,
-      )(...stuff);
-      stuff[0].server.close();
-      return filename;
-    },
+    ifElse(
+      identity,
+      async (stuff) => {
+        const filename = await downloadMatchFromMp4Url(downloadParams)(
+          searchParams,
+        )(...stuff);
+        stuff[0].server.close();
+        return filename;
+      },
+      always(null),
+    ),
   );
 
 export const findAndDownload = pipe(
