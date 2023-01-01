@@ -4,7 +4,7 @@ import WebTorrent from "webtorrent";
 import { findAndDownload } from "./phraseFinder.js";
 import fs from "fs";
 
-const example =
+export const example =
   'It should look like this: "may the force be with you - star wars".';
 
 export const botHelper = (onParams, success, failure) =>

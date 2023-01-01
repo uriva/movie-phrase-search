@@ -1,36 +1,64 @@
-import { Telegraf } from "telegraf";
-import { botHelper } from "./botUtils.js";
-import fs from "fs";
+import { botHelper, example } from "./botUtils.js";
 
-const helpText =
-  "You can search by sending me the movie name, quote start, quote end, offset in seconds, each in its own line.\n\nExample:\n\nthe departed\nmarriage is an important part\ncock must work\n-4";
+import { Telegraf } from "telegraf";
+import fs from "fs";
 
 export const runTelegramBot = ({ telegramToken }) => {
   const bot = new Telegraf(telegramToken, { handlerTimeout: 300000 });
-  bot.catch((err, ctx) => {
+  bot.catch(async (err, ctx) => {
     console.error(err);
-    ctx.reply(`Ugh something went wrong:\n\n${JSON.stringify(err)}`);
-  });
-  bot.start((ctx) => ctx.reply(helpText));
-  bot.startPolling();
-  bot.on("text", (ctx) => {
-    if (ctx.message.text.toLowerCase() === "help") {
-      ctx.reply(helpText);
-      return;
+    try {
+      await ctx.reply(`Ugh something went wrong:\n\n${JSON.stringify(err)}`);
+    } catch (e) {
+      console.error(e);
     }
-    return botHelper(
-      (params) => ctx.reply(`params:\n${JSON.stringify(params, null, 2)}`),
-      (filepath) => {
-        ctx.reply("Found it! Sending you the video...");
-        return ctx.replyWithVideo({
-          source: fs.createReadStream(filepath),
-        });
-      },
-      (reason) =>
-        ctx.reply(
-          reason ||
-            "Couldn't find the movie or quote. Try adding the movie year and quality, e.g. the matrix 1999 1080p.",
-        ),
-    )(ctx.message.text);
+  });
+  bot.start(async (ctx) => {
+    try {
+      await ctx.reply(example);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+  bot.startPolling();
+  bot.on("text", async (ctx) => {
+    try {
+      if (ctx.message.text.toLowerCase() === "help") {
+        await ctx.reply(example);
+        return;
+      }
+      return botHelper(
+        async (params) => {
+          console.log(params);
+          try {
+            await ctx.reply(`params:\n${JSON.stringify(params, null, 2)}`);
+          } catch (e) {
+            console.error(e);
+          }
+        },
+        async (filepath) => {
+          try {
+            await ctx.reply("Found it! Sending you the video...");
+            await ctx.replyWithVideo({
+              source: fs.createReadStream(filepath),
+            });
+          } catch (e) {
+            console.error(e);
+          }
+        },
+        async (reason) => {
+          try {
+            await ctx.reply(
+              reason ||
+                "Couldn't find the movie or quote. Try adding the movie year and quality, e.g. the matrix 1999 1080p.",
+            );
+          } catch (e) {
+            console.error(e);
+          }
+        },
+      )(ctx.message.text);
+    } catch (e) {
+      console.error(e);
+    }
   });
 };
