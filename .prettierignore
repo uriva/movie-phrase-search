@@ -1,3 +1,4 @@
 .codespell_ignore
 .prettierignore
+.gitignore
 Dockerfile
