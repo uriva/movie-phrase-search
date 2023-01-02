@@ -44,6 +44,7 @@ export const parseParams = (input) => {
       name: movie,
       phraseStart: startQuote.trim(),
       phraseEnd: endQuote ? endQuote.trim() : null,
+      maxSpan: 300,
     },
     downloadParams: {
       bufferLeft,
