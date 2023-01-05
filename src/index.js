@@ -8,8 +8,8 @@ import { map } from "gamla";
     findAndDownload({
       searchParams: {
         name,
-        phraseStart: "then one day",
-        phraseEnd: "socially",
+        phraseStart: "diamond lane",
+        phraseEnd: null,
         maxSpan: 120,
       },
       webTorrentClient,
@@ -24,7 +24,7 @@ import { map } from "gamla";
         bufferRight: 0,
       },
     }),
-  )(["deconstructing harry 1997 1080p"]);
+  )(["curb your enthusiasm s04e06"]);
   webTorrentClient.destroy();
   process.exit();
 })().catch(console.error);

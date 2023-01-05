@@ -40,6 +40,10 @@ export const parseParams = (input) => {
     .split(",")
     .map(Number);
   return {
+    srt: {
+      language: "en",
+      limit: 1,
+    },
     searchParams: {
       name: movie,
       phraseStart: startQuote.trim(),

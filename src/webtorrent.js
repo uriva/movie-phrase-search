@@ -1,4 +1,14 @@
-import { always, empty, filter, ifElse, max, pipe, prop } from "gamla";
+import {
+  always,
+  empty,
+  filter,
+  identity,
+  ifElse,
+  max,
+  pipe,
+  prop,
+  when,
+} from "gamla";
 
 import chardet from "chardet";
 import { parseSrt } from "./srt.js";
@@ -38,24 +48,29 @@ const findSuffix = (suffixes) =>
     ifElse(empty, always(null), max(prop("length"))),
   );
 
-const findVideoFiles = findSuffix(["avi", "mp4", "mkv"]);
+const findVideoFile = findSuffix(["avi", "mp4", "mkv"]);
+
+const torrentToServerHelper = (torrent, filename) => {
+  const server = torrent.createServer();
+  server.listen();
+  return {
+    url: `http://localhost:${server.address().port}/${torrent.files.indexOf(
+      filename,
+    )}`,
+    server,
+  };
+};
 
 export const torrentToServer = (torrent) =>
-  new Promise((resolve) => {
-    const server = torrent.createServer();
-    server.listen();
-    resolve({
-      url: `http://localhost:${server.address().port}/${torrent.files.indexOf(
-        findVideoFiles(torrent),
-      )}`,
-      server,
-    });
-  });
+  torrentToServerHelper(torrent, findVideoFile(torrent));
+
+const preExistingSrt = pipe(
+  findSuffix(["srt"]),
+  when(identity, pipe(downloadToStr, parseSrt)),
+);
 
 export const torrentToSrts = (params) => async (torrent) => {
-  const srtWithinFile = findSuffix(["srt"])(torrent);
-  const srtWithin =
-    srtWithinFile && parseSrt(await downloadToStr(srtWithinFile));
+  const srtWithin = await preExistingSrt(torrent);
   if (srtWithin) {
     console.log("found srt file within torrent, using it.");
     return [srtWithin];
@@ -63,7 +78,7 @@ export const torrentToSrts = (params) => async (torrent) => {
   if (params.path) {
     return [parseSrt(readFileSync(params.path).toString())];
   }
-  const vid = findVideoFiles(torrent);
+  const vid = findVideoFile(torrent);
   if (!vid) {
     console.error("no video file found in torrent");
     return [];
