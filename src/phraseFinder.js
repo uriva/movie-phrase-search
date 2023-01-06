@@ -7,6 +7,7 @@ import {
   pipe,
   prop,
   sideEffect,
+  sortKey,
   take,
 } from "gamla";
 import {
@@ -38,6 +39,7 @@ const perTorrent = (searchParams, downloadParams, srt, webTorrentClient) =>
       pipe(
         torrentToSrts({ query: searchParams.name, ...srt }),
         mapCat(findPhraseInSrt(searchParams)),
+        sortKey(prop("startSeconds")),
         sideEffect((x) =>
           console.log(
             `found ${x.length} occurrences:\n${x
