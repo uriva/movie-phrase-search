@@ -23,7 +23,7 @@ export const torrentIdToTorrent = (webTorrentClient) => (torrentId) =>
   });
 
 const chardetEncodingToBufferParameter = (chardetEncoding) =>
-  ["ISO-8859-1", "windows-1252"].includes(chardetEncoding)
+  ["ISO-8859-1", "ISO-8859-2", "windows-1252"].includes(chardetEncoding)
     ? "utf8"
     : chardetEncoding;
 
