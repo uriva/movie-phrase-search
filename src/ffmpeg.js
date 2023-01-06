@@ -43,3 +43,16 @@ export const downloadMatchFromMp4Url =
             .run();
         }),
     );
+const tempDir = "/tmp/";
+export const mergeFiles = (matches) =>
+  new Promise((resolve, reject) => {
+    const filename = (Math.random() + 1).toString(36).substring(2) + ".mp4";
+    const merged = ffmpeg();
+    matches.forEach((path) => merged.input(path));
+    merged
+      .on("end", () => {
+        resolve(filename);
+      })
+      .on("error", reject)
+      .mergeToFile(filename, tempDir);
+  });

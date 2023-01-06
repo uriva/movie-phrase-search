@@ -1,9 +1,9 @@
+import { mergeFiles, searchQuoteToString } from "./ffmpeg.js";
 import { pipe, sideEffect } from "gamla";
 
 import WebTorrent from "webtorrent";
 import { findAndDownload } from "./phraseFinder.js";
 import fs from "fs";
-import { searchQuoteToString } from "./ffmpeg.js";
 
 export const example =
   'It should look like this: "may the force be with you - star wars".';
@@ -20,7 +20,13 @@ export const botHelper = (onParams, success, failure) =>
       if (matches.length) {
         const [filenames] = matches;
         if (filenames.length) {
-          await success(filenames);
+          if (filenames.length > 5) {
+            const merged = await mergeFiles(filenames);
+            await success([merged]);
+            fs.unlink(merged, () => {});
+          } else {
+            await success(filenames);
+          }
           for (const filename of filenames) fs.unlink(filename, () => {});
         } else {
           failure(
