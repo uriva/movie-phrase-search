@@ -1,4 +1,14 @@
-import { head, juxt, map, mapCat, pipe, prop, sideEffect } from "gamla";
+import {
+  anyjuxt,
+  filter,
+  juxt,
+  map,
+  mapCat,
+  pipe,
+  prop,
+  sideEffect,
+  take,
+} from "gamla";
 import {
   torrentIdToTorrent,
   torrentToServer,
@@ -14,6 +24,9 @@ const searchTorrent = pipe(
   fetch,
   (x) => x.json(),
   sideEffect((x) => console.log(`found ${x.length} torrents`)),
+  filter(
+    anyjuxt(pipe(prop("leechers"), parseInt), pipe(prop("seeders"), parseInt)),
+  ),
   map(prop("info_hash")),
 );
 
@@ -56,7 +69,7 @@ export const findAndDownload = pipe(
   ({ searchParams, downloadParams, srt, webTorrentClient }) =>
     pipe(
       searchTorrent,
-      head,
-      perTorrent(searchParams, downloadParams, srt, webTorrentClient),
+      take(searchParams.max),
+      map(perTorrent(searchParams, downloadParams, srt, webTorrentClient)),
     )(searchParams.name),
 );

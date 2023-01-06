@@ -7,6 +7,7 @@ import { map } from "gamla";
   await map((name) =>
     findAndDownload({
       searchParams: {
+        max: 1,
         name,
         phraseStart: "diamond lane",
         phraseEnd: null,

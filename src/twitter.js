@@ -31,7 +31,7 @@ export const runTwitterBot = async ({
           },
         }),
       ),
-      (reason) => client.v2.reply(reason || "Sorry, I couldn't find it :(", id),
+      (reason) => client.v2.reply(reason, id),
     )(log(text).split(command)[1].trim());
   });
 };

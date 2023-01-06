@@ -1,10 +1,14 @@
 import ffmpeg from "fluent-ffmpeg";
 import { letIn } from "gamla";
 
+export const searchQuoteToString = ({ phraseStart, phraseEnd }) =>
+  phraseStart + (phraseEnd ? "->" + phraseEnd : "");
+
 const prefix = ({ name, phraseStart, phraseEnd }) =>
-  `${name || "auto-detected"}-${phraseStart}${
-    phraseEnd ? "->" + phraseEnd : ""
-  }`;
+  `${name || "auto-detected"}-${searchQuoteToString({
+    phraseStart,
+    phraseEnd,
+  })}`;
 
 const matchToFilename =
   (params) =>

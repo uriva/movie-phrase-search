@@ -51,10 +51,7 @@ export const runTelegramBot = ({ telegramToken }) => {
         },
         async (reason) => {
           try {
-            await ctx.reply(
-              reason ||
-                "Couldn't find the movie or quote. Try adding the movie year and quality, e.g. the matrix 1999 1080p.",
-            );
+            await ctx.reply(reason);
           } catch (e) {
             console.error(e);
           }

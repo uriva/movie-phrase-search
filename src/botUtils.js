@@ -3,6 +3,7 @@ import { pipe, sideEffect } from "gamla";
 import WebTorrent from "webtorrent";
 import { findAndDownload } from "./phraseFinder.js";
 import fs from "fs";
+import { searchQuoteToString } from "./ffmpeg.js";
 
 export const example =
   'It should look like this: "may the force be with you - star wars".';
@@ -15,12 +16,23 @@ export const botHelper = (onParams, success, failure) =>
       return;
     }
     try {
-      const filenames = await findAndDownload({ ...params, webTorrentClient });
-      if (filenames.length) {
-        await success(filenames);
-        for (const filename of filenames) fs.unlink(filename, () => {});
+      const matches = await findAndDownload({ ...params, webTorrentClient });
+      if (matches.length) {
+        const [filenames] = matches;
+        if (filenames.length) {
+          await success(filenames);
+          for (const filename of filenames) fs.unlink(filename, () => {});
+        } else {
+          failure(
+            `I found a video, but couldn't find the quote "${searchQuoteToString(
+              params.searchParams,
+            )}" in it.`,
+          );
+        }
       } else {
-        failure();
+        failure(
+          `I couldn't find the movie "${params.searchParams.name}". You can try adding the year, e.g. "the matrix 1999".`,
+        );
       }
     } catch (e) {
       console.error(e);
@@ -45,6 +57,7 @@ export const parseParams = (input) => {
       limit: 1,
     },
     searchParams: {
+      max: 1,
       name: movie,
       phraseStart: startQuote.trim(),
       phraseEnd: endQuote ? endQuote.trim() : null,
