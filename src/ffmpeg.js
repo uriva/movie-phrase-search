@@ -14,7 +14,8 @@ const matchToFilename =
 export const downloadMatchFromMp4Url =
   ({ bufferLeft, bufferRight, offset }) =>
   (searchParams) =>
-  ({ url }, { startSeconds, endSeconds, startTime, endTime }) =>
+  (url) =>
+  ({ startSeconds, endSeconds, startTime, endTime }) =>
     letIn(
       matchToFilename(searchParams)({ startTime, endTime }),
       (outputFilename) =>

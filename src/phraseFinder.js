@@ -1,16 +1,4 @@
-import {
-  always,
-  explode,
-  head,
-  identity,
-  ifElse,
-  juxt,
-  map,
-  mapCat,
-  pipe,
-  prop,
-  sideEffect,
-} from "gamla";
+import { head, juxt, map, mapCat, pipe, prop, sideEffect } from "gamla";
 import {
   torrentIdToTorrent,
   torrentToServer,
@@ -46,19 +34,13 @@ const perTorrent = (searchParams, downloadParams, srt, webTorrentClient) =>
         ),
       ),
     ),
-    explode(1),
-    head,
-    ifElse(
-      identity,
-      async (stuff) => {
-        const filename = await downloadMatchFromMp4Url(downloadParams)(
-          searchParams,
-        )(...stuff);
-        stuff[0].server.close();
-        return filename;
-      },
-      always(null),
-    ),
+    async ([{ url, server }, matches]) => {
+      const filenames = await map(
+        downloadMatchFromMp4Url(downloadParams)(searchParams)(url),
+      )(matches);
+      server.close();
+      return filenames;
+    },
   );
 
 export const findAndDownload = pipe(

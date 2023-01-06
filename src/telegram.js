@@ -2,6 +2,7 @@ import { botHelper, example } from "./botUtils.js";
 
 import { Telegraf } from "telegraf";
 import fs from "fs";
+import { map } from "gamla";
 
 export const runTelegramBot = ({ telegramToken }) => {
   const bot = new Telegraf(telegramToken, { handlerTimeout: 300000 });
@@ -36,12 +37,14 @@ export const runTelegramBot = ({ telegramToken }) => {
             console.error(e);
           }
         },
-        async (filepath) => {
+        async (filepaths) => {
           try {
             await ctx.reply("Found it! Sending you the video...");
-            await ctx.replyWithVideo({
-              source: fs.createReadStream(filepath),
-            });
+            await map((filepath) =>
+              ctx.replyWithVideo({
+                source: fs.createReadStream(filepath),
+              }),
+            )(filepaths);
           } catch (e) {
             console.error(e);
           }

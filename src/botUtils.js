@@ -15,10 +15,10 @@ export const botHelper = (onParams, success, failure) =>
       return;
     }
     try {
-      const filename = await findAndDownload({ ...params, webTorrentClient });
-      if (filename) {
-        await success(filename);
-        fs.unlink(filename, () => {});
+      const filenames = await findAndDownload({ ...params, webTorrentClient });
+      if (filenames.length) {
+        await success(filenames);
+        for (const filename of filenames) fs.unlink(filename, () => {});
       } else {
         failure();
       }

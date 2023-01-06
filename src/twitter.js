@@ -1,7 +1,7 @@
 import { ETwitterStreamEvent, TwitterApi } from "twitter-api-v2";
+import { log, map } from "gamla";
 
 import { botHelper } from "./botUtils.js";
-import { log } from "gamla";
 
 export const runTwitterBot = async ({
   accessToken,
@@ -24,13 +24,13 @@ export const runTwitterBot = async ({
     console.log("incoming tweet", { id, text });
     botHelper(
       console.log,
-      async (filepath) => {
+      map(async (filepath) =>
         client.v2.reply("", id, {
           media: {
             media_ids: [await client.v1.uploadMedia(filepath)],
           },
-        });
-      },
+        }),
+      ),
       (reason) => client.v2.reply(reason || "Sorry, I couldn't find it :(", id),
     )(log(text).split(command)[1].trim());
   });
