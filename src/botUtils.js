@@ -1,5 +1,5 @@
+import { last, letIn, pipe, sideEffect } from "gamla";
 import { mergeFiles, searchQuoteToString } from "./ffmpeg.js";
-import { pipe, sideEffect } from "gamla";
 
 import WebTorrent from "webtorrent";
 import { findAndDownload } from "./phraseFinder.js";
@@ -46,13 +46,20 @@ export const botHelper = (onParams, success, failure) =>
     webTorrentClient.destroy();
   });
 
+const splitSentences = (s) => s.split(/\.\.\.|\.\s|\?\s/g);
+
 export const parseParams = (input) => {
-  const [quote, context] = input.replace(/"/g, "").split("context:");
-  const separatorLocation = quote.includes("-")
-    ? quote.indexOf("-")
-    : quote.indexOf("\n");
-  const movie = quote.slice(separatorLocation + 1).trim();
-  const [startQuote, endQuote] = quote.slice(0, separatorLocation).split("...");
+  const [quoteAndMovie, context] = input.replace(/"/g, "").split("context:");
+  const separatorLocation = quoteAndMovie.includes("-")
+    ? quoteAndMovie.indexOf("-")
+    : quoteAndMovie.indexOf("\n");
+  const movie = quoteAndMovie.slice(separatorLocation + 1).trim();
+  const quote = quoteAndMovie.slice(0, separatorLocation).trim();
+  const [startQuote, endQuote] = letIn(splitSentences(quote), (sentences) =>
+    sentences.length === 1
+      ? [sentences[0], null]
+      : [sentences[0], last(sentences)],
+  );
   const [bufferLeft, bufferRight, offset] = (context || "0,0,0")
     .trim()
     .split(",")
