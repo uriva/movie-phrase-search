@@ -1,5 +1,5 @@
 import { findPhraseInSrt, parseSrt } from "./srt";
-import { log, pipe } from "gamla";
+import { pipe } from "gamla";
 
 import { readFileSync } from "fs";
 
@@ -73,7 +73,6 @@ test("findInSrt", () => {
       readFileSync,
       (b) => b.toString(),
       parseSrt,
-      log,
       findPhraseInSrt(input),
       (x) => expect(x).toEqual(output),
     )("./example-subs/" + file);
