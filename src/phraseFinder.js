@@ -65,7 +65,7 @@ export const findAndDownload = pipe(
       ...params.searchParams,
       name:
         params.searchParams.name ||
-        (await movieFromQuote(params.searchParams.phrase)),
+        (await movieFromQuote(params.searchParams.phraseStart)),
     },
   }),
   ({ searchParams, downloadParams, srt, webTorrentClient }) =>
