@@ -1,10 +1,36 @@
 import { findPhraseInSrt, parseSrt } from "./srt";
-import { pipe } from "gamla";
 
+import { pipe } from "gamla";
 import { readFileSync } from "fs";
 
 test("findInSrt", () => {
   for (const [file, input, output] of [
+    [
+      "conan-the-barbarian.srt",
+      {
+        phraseStart: "what is best in life",
+        phraseEnd: "their women",
+        maxSpan: 300,
+      },
+      [
+        {
+          id: "64->66",
+          startSeconds: 1435.352,
+          startTime: "00:23:55,352",
+          text: "Wrong! Conan, what is best in life?->...and to hear the lamentation\nof their women.",
+          endSeconds: 1445.152,
+          endTime: "00:24:05,152",
+        },
+        {
+          endSeconds: 1445.152,
+          endTime: "00:24:05,152",
+          id: "60->66",
+          startSeconds: 1422.922,
+          startTime: "00:23:42,922",
+          text: "This is good. But what is best in life?->...and to hear the lamentation\nof their women.",
+        },
+      ],
+    ],
     [
       "basic-instinct.srt",
       {

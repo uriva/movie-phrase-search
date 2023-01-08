@@ -17,5 +17,5 @@ repos:
     rev: v2.2.1
     hooks:
       - id: codespell
-        entry: codespell --ignore-words=.codespell_ignore --quiet-level=4 --check-filenames
+        entry: codespell --ignore-words=.codespell_ignore --skip="*.srt" --quiet-level=4 --check-filenames
         exclude: \.(csv|json|txt)$

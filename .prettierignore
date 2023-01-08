@@ -2,3 +2,4 @@
 .prettierignore
 .gitignore
 Dockerfile
+*.srt
