@@ -1,10 +1,54 @@
 import { findPhraseInSrt, parseSrt } from "./srt";
-import { log, pipe } from "gamla";
 
+import { pipe } from "gamla";
 import { readFileSync } from "fs";
 
 test("findInSrt", () => {
   for (const [file, input, output] of [
+    [
+      "conan-the-barbarian.srt",
+      {
+        phraseStart: "what is best in life",
+        phraseEnd: "their women",
+        maxSpan: 300,
+      },
+      [
+        {
+          id: "64->66",
+          startSeconds: 1435.352,
+          startTime: "00:23:55,352",
+          text: "Wrong! Conan, what is best in life?->...and to hear the lamentation\nof their women.",
+          endSeconds: 1445.152,
+          endTime: "00:24:05,152",
+        },
+        {
+          endSeconds: 1445.152,
+          endTime: "00:24:05,152",
+          id: "60->66",
+          startSeconds: 1422.922,
+          startTime: "00:23:42,922",
+          text: "This is good. But what is best in life?->...and to hear the lamentation\nof their women.",
+        },
+      ],
+    ],
+    [
+      "basic-instinct.srt",
+      {
+        phraseStart: "Have you ever fucked on cocaine, Nick",
+        phraseEnd: "You like playing games don't you?",
+        maxSpan: 300,
+      },
+      [
+        {
+          endSeconds: 1679.806,
+          endTime: "00:27:59,806",
+          id: "298->300",
+          startSeconds: 1648.416,
+          startTime: "00:27:28,416",
+          text: "Have you ever fucked\non cocaine, Nick?->You like playing\ngames, don't you?",
+        },
+      ],
+    ],
     [
       "deconstructing-harry.srt",
       {
@@ -55,7 +99,6 @@ test("findInSrt", () => {
       readFileSync,
       (b) => b.toString(),
       parseSrt,
-      log,
       findPhraseInSrt(input),
       (x) => expect(x).toEqual(output),
     )("./example-subs/" + file);

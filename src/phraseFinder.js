@@ -24,11 +24,11 @@ const searchTorrent = pipe(
   (query) => `https://apibay.org/q.php?q=${query}&cat=200`,
   fetch,
   (x) => x.json(),
-  sideEffect((x) => console.log(`found ${x.length} torrents`)),
   filter(
     anyjuxt(pipe(prop("leechers"), parseInt), pipe(prop("seeders"), parseInt)),
   ),
   map(prop("info_hash")),
+  sideEffect((x) => console.log(`found ${x.length} torrents`)),
 );
 
 const perTorrent = (searchParams, downloadParams, srt, webTorrentClient) =>
@@ -65,7 +65,7 @@ export const findAndDownload = pipe(
       ...params.searchParams,
       name:
         params.searchParams.name ||
-        (await movieFromQuote(params.searchParams.phrase)),
+        (await movieFromQuote(params.searchParams.phraseStart)),
     },
   }),
   ({ searchParams, downloadParams, srt, webTorrentClient }) =>
