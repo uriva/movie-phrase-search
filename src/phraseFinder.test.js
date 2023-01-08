@@ -6,6 +6,24 @@ import { readFileSync } from "fs";
 test("findInSrt", () => {
   for (const [file, input, output] of [
     [
+      "basic-instinct.srt",
+      {
+        phraseStart: "Have you ever fucked on cocaine, Nick",
+        phraseEnd: "You like playing games don't you?",
+        maxSpan: 300,
+      },
+      [
+        {
+          endSeconds: 1679.806,
+          endTime: "00:27:59,806",
+          id: "298->300",
+          startSeconds: 1648.416,
+          startTime: "00:27:28,416",
+          text: "Have you ever fucked\non cocaine, Nick?->You like playing\ngames, don't you?",
+        },
+      ],
+    ],
+    [
       "deconstructing-harry.srt",
       {
         phraseStart: "then one day",
