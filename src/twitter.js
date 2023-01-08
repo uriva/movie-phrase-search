@@ -1,5 +1,5 @@
 import { ETwitterStreamEvent, TwitterApi } from "twitter-api-v2";
-import { juxt, log, map, pipe } from "gamla";
+import { juxt, log, map, pipe, wrapArray } from "gamla";
 
 import { botHelper } from "./botUtils.js";
 
@@ -24,12 +24,16 @@ export const runTwitterBot = async ({
     console.log("incoming tweet", { id, text });
     botHelper(
       console.log,
-      pipe(
-        map((filepath) => client.v1.uploadMedia(filepath)),
-        (media_ids) => ({ media: { media_ids } }),
-        juxt(
-          (payload) => client.v2.tweet("", payload),
-          (payload) => client.v2.reply("", id, payload),
+      // Note: Twitter only allows 1 video per tweet.
+      map(
+        pipe(
+          (filepath) => client.v1.uploadMedia(filepath),
+          wrapArray,
+          (media_ids) => ({ media: { media_ids } }),
+          juxt(
+            (payload) => client.v2.tweet("", payload),
+            (payload) => client.v2.reply("", id, payload),
+          ),
         ),
       ),
       (reason) => client.v2.reply(reason, id),
